@@ -1,0 +1,105 @@
+<!--
+/*
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ * 
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ * 
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * 
+ * File:   index.html
+ * Author: Christian Rost  <rost at entronix.de>
+ *
+ * Created on 02. April 2013, 19:04
+ */
+-->
+<!DOCTYPE html>
+<html>
+  <head>
+    <title></title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+    <link rel="stylesheet" type="text/css" href="css/jquery-ui-themes-1.10.3/themes/smoothness/jquery-ui.css" />
+    <style type="text/css" title="currentStyle">
+      @import "css/jquery-datatables/demo_page.css";
+      @import "css/jquery-datatables/demo_table.css";
+    </style>
+    <script type="text/javascript"  src="js/libs/jquery/jquery-1.9.1.js"></script>
+    <script  type="text/javascript" src="js/libs/jquery-ui/jquery-ui.js"></script>
+    <script type="text/javascript" src="js/libs/jquery-datatables/jquery.dataTables.js"></script>
+    <script type='text/javascript' src='js/libs/thermometer/thermometer.js'></script>
+    <script type='text/javascript' src='js/libs/thermometer/jquery.thermometer.js'></script>
+    <script  type="text/javascript" src="js/libs/jquery-plugins/serializeForm/serializeForm.min.js"></script>
+ 
+    <script  type="text/javascript" src="js/libs/justGage/raphael.2.1.0.min.js"></script>
+    <script  type="text/javascript" src="js/libs/justGage/justgage.1.0.1.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="css/hvs.css" media="screen">   
+    
+    <script type="text/javascript">
+      // jQuery folgt hier
+
+      $(document).ready(function() {
+          var active;
+
+        $(function() {
+            
+    
+          $("#tabs").tabs({
+             
+            load: function() {
+              $("#loading-indicator").removeClass("loading-image");
+            },
+            activate: function (event, ui) {
+                 active = $('ul.tabs').tabs('option', 'active');
+                 //$("#puffer_durchschnitt").html('the tab id is ' + $("#tabs ul>li a").eq(active).attr("href"));
+            },
+            beforeLoad: function(event, ui) {
+              if (ui.tab.data("loaded")) {
+                event.preventDefault();
+                return;
+              }
+              $("#loading-indicator").addClass("loading-image");
+              ui.jqXHR.success(function() {
+                ui.tab.data("loaded", true);
+              });
+              ui.jqXHR.error(function() {
+                ui.panel.html(
+                        "Couldn't load this tab. We'll try to fix this as soon as possible. " +
+                        "If this wouldn't be a demo.");
+              });
+            }
+          });
+        });
+
+      });
+    </script>
+  </head>
+  <body>
+    <div id="wrapper">
+      <!-- the tabs -->
+      <div id="tabs">
+        <ul>
+          <li><a href="status.html"><span>Status</span></a></li>
+          <!-- <li><a href="ajax/content1.html"><span>Tab 1</span></a></li> -->
+          <li><a href="ds18b20.html"><span>Temperaturen</span></a></li>
+          <li><a href="config.html"><span>Konfig</span></a></li>
+          <li><a href="log.html"><span>Log</span></a></li>
+        </ul>
+        <div id="loading-indicator" style="margin:auto;width:100%;" class=""></div>
+        <div id="tabs-1">
+
+        </div>
+
+      </div>
+
+      -
+    </div>
+  </body>
+</html>

@@ -1,0 +1,277 @@
+<!--
+/*
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ * 
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ * 
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * 
+ * File:   config.html
+ * Author: Christian Rost  <rost at entronix.de>
+ *
+ * Created on 02. April 2013, 19:04
+ */
+-->
+<!DOCTYPE html>
+<html>
+  <head>
+    <title></title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<!--
+    <link rel="stylesheet" type="text/css" href="css/jquery-ui-themes-1.10.3/themes/smoothness/jquery-ui.css" />
+    <style type="text/css" title="currentStyle">
+      @import "css/jquery-datatables/demo_page.css";
+      @import "css/jquery-datatables/demo_table.css";
+    </style>
+    <script type="text/javascript"  src="js/libs/jquery/jquery-1.9.1.js"></script>
+    <script  type="text/javascript" src="js/libs/jquery-ui/jquery-ui.js"></script>
+    <script  type="text/javascript" src="js/libs/jquery-plugins/serializeForm/serializeForm.min.js"></script>
+-->  
+    <script type="text/javascript">
+      $(function() {
+        var volCounter = 1,
+                volTemplate = "<p  id='#{id}'><label for='#{id}'>#{label}</label><input id='spinner_#{id}' name='volume[]' value='2000' /></p>";
+        $("#spinner_max_puffer_temp").spinner({
+          step: 1,
+          min: 60,
+          max: 98
+        });
+        $("#spinner_min_puffer_temp").spinner({
+          step: 1,
+          min: 20,
+          max: 50
+        });
+        $("#spinner_volume_1").spinner({
+          min: 500,
+          max: 5000,
+          step: 100//,
+        });
+        $("#spinner_puffer_count").spinner({
+          min: 1,
+          max: 5,
+          step: 1,
+          change: changepuffer,
+          stop: changepuffer
+        });
+        $("#spinner_heizwert_holz").spinner({
+          min: 3.0,
+          max: 4.6,
+          step: .1
+        });
+        $("#spinner_abgas_end_temp").spinner({
+          min: 80,
+          max: 120,
+          step: 1
+        });
+        $("#spinner_shake_time").spinner({
+          min: 2,
+          max: 20,
+          step: 1
+        });
+        $("#spinner_shake_pause").spinner({
+          min: 10,
+          max: 150,
+          step: 1
+        });
+        $("#spinner_shake_start").spinner({
+          min: 0.2,
+          max: 0.9,
+          step: .1
+        });
+        $("#spinner_shaking").spinner({
+          min: 0.6,
+          max: 1.5,
+          step: .1
+        });
+        $("#spinner_shake_max_count").spinner({
+          min: 5,
+          max: 50,
+          step: 1
+        });
+
+        $("#btnSave").button().click(function(event) {
+          event.preventDefault();
+          var mydata = {};
+          mydata['action'] = 'save';
+          var b = $('form').serializeForm();
+          var myJSONText = JSON.stringify({"config_data": b});
+          mydata['json'] = myJSONText;
+
+          $.ajax({
+            type: "POST",
+            url: "jsonconfig",
+            data: mydata,
+            success: function(data) {
+             
+              $.each(data, function(i, item) {
+                $('#'+i).html(item);
+                if(i==='msg'){
+                  setTimeout(function(){$('#msg').html('');}, 5000);
+                }
+              });
+            },
+            error: function(e) {
+              alert('oops: ' + e);
+            }
+
+          });
+
+        });
+
+        $("#btnDefault").button().click(function(event) {
+          event.preventDefault();
+          var mydata = {};
+          mydata['action'] = 'default';
+          $.ajax({
+            type: "POST",
+            url: "jsonconfig",
+            data: mydata,
+            success: function(data) {
+              set_spinner(data);
+            },
+            error: function(e) {
+              alert('oops: ' + e);
+            }
+
+          });
+        });
+
+        $("#btnReset").button().click(function(event) {
+          event.preventDefault();
+          //your jQuery ajax code
+          load_config();
+        });
+
+        // actual addTab function: adds new tab using the input from the form above
+        function changepuffer() {
+          var value = $("#spinner_puffer_count").val();
+          while (value != volCounter)
+          {
+            if (value < volCounter) {
+              var id = "#volume_" + volCounter;
+              $(id).remove();
+              volCounter--;
+            }
+            else {
+              volCounter++;
+              var label = "Puffervolumen  " + volCounter,
+                      id = "volume_" + volCounter,
+                      a = $(volTemplate.replace(/#\{id\}/g, id).replace(/#\{label\}/g, label));
+              $(a).appendTo("#volumen");
+              $("#spinner_" + id).spinner({
+                min: 500,
+                max: 5000,
+                step: 100
+              });
+            }
+          }
+        }
+
+        function set_spinner(data) {
+          $.each(data, function(i, item) {
+            var spinnerid = "#spinner_";
+            if ($.isArray(item)) {
+              spinnerid += i + "_";
+              $.each(item, function(index, value) {
+                var spinner = $(spinnerid + (index + 1)).spinner();
+                spinner.spinner("value", value);
+              })
+            } else
+            {
+              spinnerid += i;
+              var spinner = $(spinnerid).spinner();
+              spinner.spinner("value", item);
+            }
+
+          });
+        }
+        function load_config() {
+          //your jQuery ajax code
+          $.ajax({
+            type: "GET",
+            url: "jsonconfig",
+            success: function(data) {
+              set_spinner(data);
+
+            }
+          });
+        }
+        ;
+        load_config();
+      });
+    </script>
+  </head>
+  <body>
+    <div id="msg"></div>
+    <form>
+      <div id="puffer_konfig">
+        <p><strong>Puffer - Konfiguration:</strong></p>
+        <p>
+          <label for="spinner_puffer_count">Anzahl Puffer</label>
+          <input id="spinner_puffer_count" name="puffer_count" value="1" />
+        </p>
+        <div id="volumen">
+          <p>Volumen (500 - 5000 Ltr.) </p> 
+          <p id="volume_1">
+            <label for="spinner_volume_1">Puffervolumen 1</label>
+            <input id="spinner_volume_1" name="volume[]" value="2000" />
+          </p>
+        </div>
+        <p>
+          <label for="spinner_heizwert_holz">Heizwert Holz (3,0 - 4,6 KWh/kg)</label>
+          <input id="spinner_heizwert_holz" name="heizwert_holz" />
+        </p>      
+        <p>
+          <label for="spinner_max_puffer_temp">Max. Puffertemperatur (60 - 98 °C)</label>
+          <input id="spinner_max_puffer_temp" name="max_puffer_temp" />
+        </p>
+        <p>
+          <label for="spinner_min_puffer_temp">Min. Puffertemperatur (20 - 50 °C)</label>
+          <input id="spinner_min_puffer_temp" name="min_puffer_temp" />
+        </p>
+      </div>
+<div id="hks_konfig">
+        <p><strong>HKS - Konfiguration: (Regelung)</strong></p>
+        <p>
+          <label for="spinner_abgas_end_temp">Abgastemp. für Ende Regelung (80 - 120 °C)</label>
+          <input id="spinner_abgas_end_temp" name="abgas_end_temp" value="100" />
+        </p>
+      </div>
+      <div id="hks_shaker">
+        <p><strong>HKS - Konfiguration: (Rüttler)</strong></p>
+        <p>
+          <label for="spinner_shake_time">Rüttelzeit (2 - 20 sec.)</label>
+          <input id="spinner_shake_time" name="shake_time" value="2" />
+        </p>
+        <p>
+          <label for="spinner_shake_pause">Pausenzeit (10 - 150 sec.)</label>
+          <input id="spinner_shake_pause" name="shake_pause" />
+        </p>      
+        <p>
+          <label for="spinner_shake_start">Startkriterium (0,5 V)</label>
+          <input id="spinner_shake_start" name="shake_start" />
+        </p>
+        <p>
+          <label for="spinner_shaking">Rüttelkriterium (0,6 V - 1,5 V)</label>
+          <input id="spinner_shaking" name="shaking" value="1" />
+        </p>
+        <p>
+          <label for="spinner_shake_max_count">Rüttelhübe bis Ausbrand erkannt (5 - 50)</label>
+          <input id="spinner_shake_max_count" name="shake_max_count" />
+        </p>      
+
+      </div>
+    </form>
+    <button id="btnSave">Save</button>
+    <button id="btnDefault">Default</button>
+    <button id="btnReset">Reset</button>
+  </body>
+</html>

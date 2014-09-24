@@ -1,0 +1,282 @@
+<!--
+/*
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ * 
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ * 
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * 
+ * File:   ds18b20.html
+ * Author: Christian Rost  <rost at entronix.de>
+ *
+ * Created on 02. April 2013, 19:04
+ */
+-->
+<!DOCTYPE html>
+<html>
+    <head>
+        <title></title>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+       <!--
+        <link rel="stylesheet" type="text/css" href="css/jquery-ui-themes-1.10.3/themes/smoothness/jquery-ui.css" />
+        <style type="text/css" title="currentStyle">
+            @import "css/jquery-datatables/demo_page.css";
+            @import "css/jquery-datatables/demo_table.css";
+        </style>
+        <script type="text/javascript"  src="js/libs/jquery/jquery-1.9.1.js"></script>
+        <script  type="text/javascript" src="js/libs/jquery-ui/jquery-ui.js"></script>
+        <script type="text/javascript" src="js/libs/jquery-datatables/jquery.dataTables.js"></script>
+        -->
+        <script type="text/javascript">
+            $(function() {
+                var ind = 0;
+                var select, input;
+                $('#ds18b20_sensoren').dataTable({
+                    "bPaginate": false,
+                    "bLengthChange": false,
+                    "bFilter": false,
+                    "bSort": false,
+                    "bInfo": false,
+                    "bAutoWidth": false,
+                    "aoColumnDefs": [{
+                            "aTargets": [2],
+                            "mData": 0,
+                            "mRender": function(data, type, full) {
+                                return select.outerHTML;
+                            },
+                        },
+                        {
+                            "aTargets": [3],
+                            "mData": 0,
+                            "mRender": function(data, type, full) {
+                                return input.outerHTML;
+                            },
+                        }
+                    ]
+                });
+
+                function set_data(json) {
+                    $('#ds18b20_sensoren').dataTable( ).fnClearTable();
+
+                    //creates a input
+                    input = document.createElement('input');
+                    input.setAttribute("type", "text");
+                    input.setAttribute('class', 'pufferpos');
+                    input.setAttribute('size', '5');
+                    input.setAttribute('maxlength', '2');
+
+
+                    //creates a combobox
+                    select = document.createElement('select');
+                    select.setAttribute('class', 'pufferchange');
+                    var pufferoptions;
+                    pufferoptions += '<option value=no>---</option>';
+                    pufferoptions += '<option value=out>Aussen</option>';
+                    for (var i = 0; i < json.puffer_count; i++)
+                    {
+                        pufferoptions += '<option value=' + i + '>Puffer ' + i + '</option>';
+                    }
+                    select.innerHTML = pufferoptions;
+
+
+                    $.each(json.aaData, function() {
+                        //     $(rowBuilder(this)).data("data", this).appendTo("#jobtable");
+                        select.setAttribute('name', ind + '');
+                        select.setAttribute('id', 'pufferchange' + ind);
+
+                        input.setAttribute('name', ind + '');
+                        input.setAttribute("id", 'puffer_' + ind + '_pos');
+                        ind++;
+
+                        $('#ds18b20_sensoren').dataTable( ).fnAddData([
+                            this.id,
+                            this.crc,
+                            this.puffer,
+                            this.pos,
+                            this.temp]);
+
+                        if (this.puffer == -1) {
+                            $('#' + select.id).val('no');
+                        } else if (this.puffer == 255) {
+                            $('#' + select.id).val('out');
+                        } else {
+                            $('#' + select.id).val(this.puffer);
+                        }
+                        $('#' + input.id).val(this.pos);
+                    });
+                }
+
+                function load_config() {
+                    //your jQuery ajax code
+                    $.ajax({
+                        type: "GET",
+                        url: "jsonds18b20",
+                        success: function(json) {
+                            set_data(json);
+
+
+
+                        }
+                    });
+                }
+                ;
+                load_config();
+
+                $("#buttonRefreshAjax")
+                        .button({
+                            icons: {
+                                primary: "ui-icon-refresh"
+                            },
+                            text: true
+                        })
+                        .click(function(event) {
+                            event.preventDefault();
+
+                            ajax_ds18B20_call();
+                        });
+
+                $("#buttonSaveAjax")
+                        .button({
+                            icons: {
+                                primary: "ui-icon-save"
+                            },
+                            text: true
+                        })
+                        .click(function(event) {
+                            event.preventDefault();
+
+                            ajax_ds18B20_save();
+                        });
+
+
+
+                var ajax_ds18B20_save = function() {
+                    var columns = $('#ds18b20_sensoren thead th').map(function() {
+                        // This assumes that your headings are suitable to be used as
+                        //  JavaScript object keys. If the headings contain characters 
+                        //  that would be invalid, such as spaces or dashes, you should
+                        //  use a regex here to strip those characters out.
+                        return $(this).text();
+                    });
+
+                    var tableObject = $('#ds18b20_sensoren tbody tr').map(function(i) {
+                        var row = {};
+
+                        // Find all of the table cells on this row.
+                        $(this).find('td').each(function(i) {
+                            // Determine the cell's column name by comparing its index
+                            //  within the row with the columns list we built previously.
+                            var rowName = columns[i];
+
+                            // Add a new property to the row object, using this cell's
+                            //  column name as the key and the cell's text as the value.
+
+                            // Coalesce a value of either the first textbox, dropdown,
+                            //  or the cell's text value itself.
+                            var value = $(this).find('input[type=text]').val()
+                                    || $(this).find('select').val()
+                                    || $(this).text();
+                            row[rowName] = value;
+
+                            // if (rowName == 'Puffer') {
+                            //   //row[rowName] = $(this).find('option:selected').text();
+                            //   row[rowName] = $(this).find('option:selected').val();
+                            // } else if (rowName == 'Position') {
+                            //   //row[rowName] = $(this).find('option:selected').text();
+                            //   row[rowName] = $(this).val();
+                            // } else
+                            //   row[rowName] = $(this).text();
+                        });
+
+                        // Finally, return the row's object representation, to be included
+                        //  in the array that $.map() ultimately returns.
+                        return row;
+
+    // Don't forget .get() to convert the jQuery set to a regular array.
+                    }).get();
+
+
+
+                    //your jQuery ajax code
+                    var mydata = {};
+                    mydata['action'] = 'save';
+                    //mydata['ds18b20_data'] = JSON.stringify(tableObject);
+
+                    var myJSONText = JSON.stringify({"ds18b20_data": tableObject});
+                    mydata['json'] = myJSONText;
+
+                    $.ajax({
+                        type: "POST",
+                        url: "jsonds18b20",
+                        data: mydata,
+                        success: function(data) {
+                            ShowInfoDlg(data.message);
+                        },
+                        error: function(e) {
+                            alert('oops: ' + e);
+                        }
+                    });
+
+                };
+
+                var ajax_ds18B20_call = function() {
+                    //your jQuery ajax code
+                    $.ajax({
+                        type: "GET",
+                        url: "jsonds18b20",
+                        data: "action=refresh",
+                        success: function(json) {
+                            //$('#results').text(data.result);
+                            set_data(json);
+                        }
+                    });
+
+                };
+            });
+        </script>
+    </head>
+    <body>
+        <div id="ds18b20_konfig">
+            <button value="Refresh" id="buttonRefreshAjax" >Refresh</button>
+            <!--
+            <form>
+              <fieldset class="ui-helper-reset">
+                <label for="tab_title">Title</label>
+                <input type="text" name="tab_title" id="tab_title" value="" class="ui-widget-content ui-corner-all" />
+                <label for="tab_content">Content</label>
+                <textarea name="tab_content" id="tab_content" class="ui-widget-content ui-corner-all"></textarea>
+              </fieldset>
+            </form>
+            -->
+
+            <div id="news">
+                <table id="ds18b20_sensoren" 
+
+                       class="display dataTable"  aria-describedby="example_info" style="width: 100%;">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>CRC</th>
+                            <th>Puffer</th>
+                            <th>Position</th>
+                            <th>Temperatur</th>
+                        </tr>
+                    </thead>
+                </table>
+            </div>
+            <button value="Save" id="buttonSaveAjax" >Save</button>
+            <!--
+             <button>Add Line</button>
+             <div id="results"></div>
+            -->
+        </div>
+    </body>
+</html>

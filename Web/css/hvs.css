@@ -1,0 +1,292 @@
+/* 
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ * 
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ * 
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * 
+    Document   : hvs
+    Created on : 20.03.2013, 20:35:09
+    Author     : The Death
+    Description:
+        Purpose of the stylesheet follows.
+*/
+
+root { 
+  display: block;
+}
+body {
+  font-size:80%;
+  color: black; /* Schriftfarbe */
+}
+
+#status p {
+  background-color:white;
+  border-style: ridge;
+  border-color: grey;
+  border-width: 2px;
+  font-size:80%;
+}
+
+#status #control_state{
+  width: 100%;
+  /*height: 2em;  */
+  text-align: center;
+  font-weight: bold;
+}
+#control_state span{
+  vertical-align: middle;
+}
+#control_state.unknow{
+  background-color: yellow;
+}
+#control_state.active{
+  background-color: green;
+}
+#control_state.deactive{
+  background-color: red;
+}
+
+html, body, #status {
+  margin: 0;
+  padding: 0;
+  /*height: 100%; /* WICHTIG!!! STRECKT ANZEIGENBEREICH AUF 100% */
+}
+#wrapper {
+  width: 80%; 
+  margin: auto; /* Div soll zentriert werden */
+  /*min-height: 100%; /* Mindesthöhe für moderne Browser */
+  /*height:auto !important;  Important Regel für moderne Browser */ 
+  /* height:100%; /* Mindesthöhe für den IE */ 
+  overflow: hidden !important; /* FF Scroll-leiste */ 
+}
+
+.loading-image {
+  background:transparent url(../img/ajax-loader.gif) 50% 50% no-repeat;
+  height:50px;
+  margin:50px;
+}
+
+#brenner {
+  position: relative;
+  width: 400px;
+  background-image: url("../img/brenner.gif");
+  background-repeat: no-repeat;
+  background-size: contain;
+  /*  background-position-y: bottom;*/
+}
+#outtemp {
+  position: relative;
+  float: right;
+  width: 150px;
+  background-image: url("../img/brick_border.png");
+  background-repeat: repeat-y;
+}
+
+#brenner,
+#puffer_block,
+#outtemp{
+  height: 300px;
+}
+
+#brenner{
+  float: left; 
+}
+
+#puffer_block {
+  display: inline-block;
+  position: relative;
+  width: auto;
+}
+
+.puffer {
+  top: 0;
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background-size: contain;
+  background-image: url("../img/puffer.gif");
+  background-repeat: no-repeat;
+  background-position: 50%;
+
+}
+
+
+#cobo_pick_puffer,
+#puffer_durchschnitt,
+.temp p
+{display: block;
+ margin: 6px auto;
+}
+
+
+/*#cobo_pick_puffer{margin-top:50px;}*/
+#puffer_durchschnitt{margin-top:10px; width:11em;}
+.outtemp{margin-left: 50px;}
+#abgas_temp,
+#brenner_temp,
+#o2,
+#lambdacheck,
+#abgasverlust,
+#nachlegen,
+#verlust,
+.outtemp{
+  display: block;
+  position: absolute;
+  width: 122px;
+}
+
+#abgasverlust{
+  top: 0%;
+  right: 0;
+}
+
+#nachlegen
+{
+  top: 35%;
+  right: 50%;
+}
+
+#abgas_temp {
+  top: 10%;
+  right: 0;
+}
+
+#lambdacheck {
+  top: 40%;
+  right: 0;
+}
+#verlust{  
+  top: 65%;
+  right: 0;
+}
+
+#brenner_temp {
+top: 68%;
+right: 50%;
+background-color: rgba(255, 255, 255, 0.81);
+}
+#o2 {
+  top: 24%;
+  right: 50%;
+}
+
+.temp_value {
+  display: block;
+  position: static;
+  top: 21%;
+  /*right: 37%;*/
+  width: 10em;
+}
+
+#ctrl_btn
+{
+  width: 50px;
+  position: fixed;
+  z-index: 99;
+  left: 0;
+}
+
+#btnRestart {
+  height: 50px;
+  overflow: visible;
+}
+
+
+#btnRefresh {
+  background-size: contain;
+  background-image: url("../img/refresh.png");
+  background-repeat: no-repeat;
+  background-position: 50%;
+  height: 50px;
+  width: 50px;
+  background-color: red;
+
+}
+
+.ui-tabs, .ui-tabs-panel {
+  height:100%;
+}
+
+#tail {
+  border: 1px solid blue;
+  height: 80%;
+  width: 100%;
+  overflow: scroll;
+}
+
+.armed{background-color:green;}
+.dataTables_wrapper,
+table.display{clear:none;}
+
+#ruettler_info_wrapper .dataTables_scroll {
+  float: right;
+clear: none;
+display: inline-block;
+width: 90%;
+}
+
+#shake_count,#shakeing_count{
+  text-align: right;
+  text-decoration: underline;}
+
+.trafficlight{
+  float: left;
+  background: #222;
+  background-image: linear-gradient(transparent 2%, #111 2%, transparent 3%, #111 30%);
+  width: 50px;
+  height: 150px;
+  border-radius: 10px;
+  position: relative;
+  border: solid 5px #333;
+}
+
+
+.red{
+  background: red;
+  background-image: radial-gradient(brown, transparent);
+  top: 10px;
+
+  box-shadow: 0 0 10px #111 inset,      0 0 10px red;
+}
+
+.yellow{
+  background: yellow;
+  background-image: radial-gradient(orange, transparent);
+  top: 55px;
+
+  box-shadow: 
+    0 0 10px #111 inset,
+    0 0 10px yellow;
+}
+
+.green{
+  background: green;
+  background-image: radial-gradient(lime, transparent);
+  top: 102px;
+  box-shadow: 
+    0 0 20px #111 inset,
+    0 0 10px lime;
+
+}
+.red,
+.yellow,
+.green {
+  background-size: 5px 5px; 
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  position: absolute;
+  left: 5px; 
+}
+
+.dark_light{opacity:.1;}

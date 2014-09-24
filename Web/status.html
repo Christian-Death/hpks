@@ -1,0 +1,609 @@
+<!--
+/*
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ * 
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ * 
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * 
+ * File:   index.html
+ * Author: Christian Rost  <rost at entronix.de>
+ *
+ * Created on 02. April 2013, 19:04
+ */
+-->
+<!DOCTYPE html>
+<html>
+    <head>
+        <title></title>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<!--
+        <script type="text/javascript"  src="js/libs/jquery/jquery-1.9.1.js"></script>
+        <script  type="text/javascript" src="js/libs/jquery-ui/jquery-ui.js"></script>
+        <script type="text/javascript" src="js/libs/jquery-datatables/jquery.dataTables.js"></script>
+        <script type='text/javascript' src='js/libs/thermometer/thermometer.js'></script>
+        <script type='text/javascript' src='js/libs/thermometer/jquery.thermometer.js'></script>
+        <script  type="text/javascript" src="js/libs/jquery-plugins/serializeForm/serializeForm.min.js"></script>
+
+        <script  type="text/javascript" src="js/libs/justGage/raphael.2.1.0.min.js"></script>
+        <script  type="text/javascript" src="js/libs/justGage/justgage.1.0.1.min.js"></script>
+        <link rel="stylesheet" type="text/css" href="css/hvs.css" media="screen">   
+-->
+        <script type="text/javascript">
+            // jQuery folgt hier
+
+
+            handlePufferSelection = function() {
+
+                var a = $("#puffer").children("div");
+                $(a).hide();
+                $(a[($(this).val())]).show();
+
+            };
+
+            $(document).ready(function() {
+                $("#dialog").dialog({
+                    autoOpen: false,
+                    modal: true,
+                    show: {
+                        effect: "blind",
+                        duration: 500
+                    }
+                });
+
+                $("#cobo_pick_puffer").change(handlePufferSelection);
+
+                // Run the event handler once now to ensure everything is as it should be
+                handlePufferSelection.apply($("#cobo_pick_puffer"));
+
+                var w = $('#thermo').width();
+                var h = $('#thermo').height();
+
+                $('#thermo').thermometer({
+                    w: w,
+                    h: h,
+                    color: {
+                        label: 'rgba(255, 255, 255, 1)',
+                        tickLabel: 'rgba(255, 0, 0, 0.4)'
+                    },
+                    centerTicks: false,
+                    majorTicks: 10,
+                    minorTicks: 1,
+                    max: 60,
+                    min: -30,
+                    scaleTickLabelText: 1.15,
+                    scaleLabelText: 0.9,
+                    scaleTickWidth: 1.5,
+                    gradient: true,
+                    bulbRadiusProportion: 0.1,
+                    unitsLabel: " °C"
+                });
+
+                $('#ruettler_info').dataTable({
+                    "bPaginate": false,
+                    "bLengthChange": false,
+                    "bFilter": false,
+                    "bSort": false,
+                    "bInfo": false,
+                    "bAutoWidth": false,
+                    "sScrollY": "100px",
+                    "bScrollCollapse": true,
+                    "aaSorting": [[0, "desc"]]
+                });
+                $('#sollwert_info').dataTable({
+                    "bPaginate": false,
+                    "bLengthChange": false,
+                    "bFilter": false,
+                    "bSort": false,
+                    "bInfo": false,
+                    "bAutoWidth": false
+                });
+                $('#control_info').dataTable({
+                    "bPaginate": false,
+                    "bLengthChange": false,
+                    "bFilter": false,
+                    "bSort": false,
+                    "bInfo": false,
+                    "bAutoWidth": false
+                });
+
+                $("#btnRuettler")
+                        .click(function(event) {
+                            event.preventDefault();
+                            //your jQuery ajax code
+                            var mydata = {};
+
+                            mydata['action'] = 'shaker_' + $('#btnRuettler').prop('value');
+                            $.ajax({
+                                type: "POST",
+                                url: "shaker",
+                                data: mydata,
+                                success: function(data) {
+                                    shaker(data.shaker);
+                                    ShowInfoDlg(data.message);
+                                },
+                                error: function(e) {
+                                    alert('oops: ' + e);
+                                }
+                            });
+                        });
+
+                $("#btnRuettlerReset")
+                        .click(function(event) {
+                            event.preventDefault();
+
+                            //your jQuery ajax code
+                            var mydata = {};
+                            mydata['action'] = 'shaker_reset';
+
+                            $.ajax({
+                                type: "POST",
+                                url: "shaker",
+                                data: mydata,
+                                success: function(data) {
+                                    shaker(data.shaker);
+                                    ShowInfoDlg(data.message);
+                                },
+                                error: function(e) {
+                                    alert('oops: ' + e);
+                                }
+                            });
+                        });
+
+                $("#btnRefresh")
+                        .button({
+                            text: false
+                        })
+                        .click(function(event) {
+                            event.preventDefault();
+                            ajax_call();
+                        });
+                $("#btnRestart")
+                        .button()
+                        .click(function() {
+                            $("#dialog p").text("Regelung rücksetzen?");
+                            $("#dialog").dialog(
+                                    'option',
+                                    'buttons', [
+                                        {
+                                            text: "Ja",
+                                            click: function() {
+                                                var mydata = {};
+                                                mydata['action'] = 'control_reset';
+
+                                                $.ajax({
+                                                    type: "POST",
+                                                    url: "status",
+                                                    data: mydata,
+                                                    success: function(data) {
+                                                        ShowInfoDlg(data.message);
+                                                    },
+                                                    error: function(e) {
+                                                        alert('oops: ' + e);
+                                                    }
+                                                });
+                                                $(this).dialog('close');
+                                            }
+                                        },
+                                        {
+                                            text: "Nein",
+                                            click: function() {
+                                                $(this).dialog('close');
+                                            }
+                                        }]);
+                            $("#dialog").dialog("open");
+                        });
+
+                var sek_air_gauge = new JustGage({
+                    id: "sek_air_gauge",
+                    gaugeWidthScale: 0.5,
+                    titleFontColor: "black",
+                    value: 0,
+                    min: 0,
+                    max: 10000,
+                    title: "Sekundärluft-\nansteuerung",
+                    label: "mV"
+                });
+                var abgas_gauge = new JustGage({
+                    id: "abgas_gauge",
+                    gaugeWidthScale: 0.5,
+                    titleFontColor: "black",
+                    value: 0,
+                    min: 0,
+                    max: 300,
+                    title: "Abgastemperatur",
+                    label: "°C"
+                });
+                var brenner_gauge = new JustGage({
+                    id: "brenner_gauge",
+                    gaugeWidthScale: 0.5,
+                    titleFontColor: "black",
+                    value: 0,
+                    min: 0,
+                    max: 1300,
+                    title: "Brennertemperatur",
+                    label: "°C"
+                });
+
+
+                function ShowInfoDlg(message) {
+                    $("#dialog p").text(message);
+                    $("#dialog").dialog(
+                            'option',
+                            'buttons', [
+                                {
+                                    text: "Ok",
+                                    click: function() {
+                                        $(this).dialog('close');
+                                    }
+                                }]);
+                    $("#dialog").dialog("open");
+                }
+
+
+                var x = 0;
+
+                var pufferCounter = 1,
+                        pufferTemplate = "<p id='#{id}' class='temp_value'>#{label}<br><span class='value'>#{temp}</span>°C</p>";
+
+                function control(data) {
+                    var $control = $('#control_state');
+                    $control.removeClass('unknow active deactive');
+                    if (data['state'] === true) {
+                        $control.addClass('active');
+                        $('#control_state > span').text('Active');
+                    }
+                    else {
+                        $control.addClass('deactive');
+                        $('#control_state > span').text('Deactive');
+                    }
+                    $('#control_info').dataTable( ).fnClearTable();
+                    $.each(data.times, function() {
+                        for (var key in this) {
+
+                            $('#control_info').dataTable( ).fnAddData([
+                                key,
+                                this[key]]);
+                        }
+                    });
+                }
+                ;
+
+                function shaker(data) {
+                    if (data["shaker_armed"] === false) {
+                        $('.red').removeClass('dark_light');
+                        $('.yellow').addClass('dark_light');
+                        $('.green').addClass('dark_light');
+                    } else {
+                        $('.red').addClass('dark_light');
+                        if (data["shaker_state"] === false) {
+                            $('.yellow').removeClass('dark_light');
+                            $('.green').addClass('dark_light');
+                        } else {
+                            $('.green').removeClass('dark_light');
+                            $('.yellow').addClass('dark_light');
+                        }
+                    }
+                    $('#ruettler_info').dataTable( ).fnClearTable();
+                    $.each(data.data, function(index, value) {
+
+                        $('#ruettler_info').dataTable( ).fnAddData([
+                            index + 1,
+                            this.start,
+                            this.dauer,
+                            this.count]);
+                    });
+                    $('#ruettler_info').dataTable( ).fnSort([[0, 'desc']]);
+                    if (data["shaker_state"] === false) {
+                        $('#btnRuettler').prop('value', 'on');
+                        $('#btnRuettler').html('Rüttler start');
+                    } else {
+                        $('#btnRuettler').prop('value', 'off');
+                        $('#btnRuettler').html('Rüttler stop');
+                    }
+                    $('#shakeing_count .value').text(data["sum"].run_count);
+                    $('#shake_count .value').text(data["sum"].shake_count);
+                }
+
+                function sollwert(data) {
+                    $('#sollwert_info').dataTable( ).fnClearTable();
+                    $('#sollwert_info').dataTable( ).fnAddData([
+                        data.ist,
+                        data.nicht,
+                        data.faktor]);
+
+
+                }
+
+
+                function puffer(data) {
+                    var value = data["count"];
+
+                    while (value !== pufferCounter)
+                    {
+                        if (value < pufferCounter) {
+                            var id = "#puffer_" + pufferCounter;
+                            $(id).remove();
+                            $('#cobo_pick_puffer option[value="' + pufferCounter + '"]').remove();
+                            pufferCounter--;
+                        }
+                        else {
+                            pufferCounter++;
+                            var id = "puffer_" + pufferCounter;
+                            var $div = $("<div>", {id: id, class: "temp"});
+
+                            //$("#box").append();
+                            id += "1";
+                            //       var label = "Puffertemperatur " + pufferCounter,
+                            //              
+                            //               a = $(pufferTemplate.replace(/#\{id\}/g, id).replace(/#\{label\}/g, label));
+                            //       $div.append(a)
+                            $div.appendTo("#puffer");
+
+                            $('#cobo_pick_puffer').append('<option value="' + (pufferCounter - 1) + '">Puffer ' + pufferCounter + '</option>');
+                        }
+                    }
+                    handlePufferSelection.apply($("#cobo_pick_puffer"));
+
+                    var a = $("#puffer").children("div");
+                    $(a).html('');
+                    var dummy_counter = 0,
+                            gesamt_temp = new Array(),
+                            gesamt_temp_count = new Array();
+                    $.each(data.temps, function() {
+                        if (this.puffer > -1 && this.puffer < 255) {
+
+                            var idp = "puffer_" + (this.puffer + 1) + this.pos,
+                                    puffer = "#puffer_" + (this.puffer + 1);
+
+                            if ($('#' + idp).length > 0) {
+                                dummy_counter++;
+                                idp += dummy_counter;
+                            }
+
+                            if (this.temp !== 'Fehler') {
+                                gesamt_temp[this.puffer] = isNaN(gesamt_temp[this.puffer]) ? this.temp : gesamt_temp[this.puffer] + this.temp;
+                                gesamt_temp_count[this.puffer] = isNaN(gesamt_temp_count[this.puffer]) ? 1 : gesamt_temp_count[this.puffer] + 1;
+                            }
+                            var $a = $(pufferTemplate.replace(/#\{id\}/g, idp).replace(/#\{label\}/g, this.pos).replace(/#\{temp\}/g, this.temp));
+                            $a.appendTo(puffer);
+                        }
+                    });
+
+                    $("#cobo_pick_puffer option").each(function() {
+                        var puffernr = $(this).attr('value');
+                        var durchschnitt_puffer = gesamt_temp[puffernr] / gesamt_temp_count[puffernr];
+                        $(this).text('Puffer ' + ((+puffernr) + 1) + ' (' + durchschnitt_puffer.toFixed(2) + ')');
+                    });
+
+                }
+
+                function max_values(data) {
+                    $.each(data, function(i, item) {
+                        var oldtext = $('#' + i + ' .value').text();
+                        $('#' + i + ' .value').text(oldtext + ' (' + item + ')');
+                    });
+                }
+                function leistung(data) {
+                    var a = data.verlust * 1000;
+                    $('#verlust .value').text(a.toFixed(3) + 'Wh');
+                    $('#verlust .zeit').text('über ' + data.zeit + 'min');
+                }
+
+                var json_auswerten = function(data) {
+                    $.each(data["values"], function(i, item) {
+                        $('#' + i + ' .value').text(item);
+                    });
+                    $.each(data["uses"], function(i, item) {
+                        if (item)
+                            $('#' + i).show();
+                        else
+                            $('#' + i).hide();
+                    });
+                    $('#nachlegen .value').text(data.puffer.nachlegen);
+                    $('#puffer_durchschnitt .value').text(data.puffer.puffer_durchschnitt + "°C / " + data.puffer.leistung + "KWh");
+
+                    $('#thermo').thermometer('setValue', data.puffer.outtemp);
+
+                    abgas_gauge.refresh(data["values"].abgas_temp);
+                    brenner_gauge.refresh(data["values"].brenner_temp);
+
+                    control(data.control);
+                    puffer(data.puffer);
+                    shaker(data.shaker);
+                    sollwert(data.nominal_value);
+                    max_values(data.max);
+                    if (data.leistung !== undefined)
+                        leistung(data.leistung);
+                };
+
+                var getSekAirValue = function() {
+                    //your jQuery ajax code
+                    $.ajax({
+                        type: "GET",
+                        url: "jsonsekair",
+                        success: function(data) {
+                            sek_air_gauge.refresh(data["lambdacheck"]);
+                        }
+                    });
+                };
+
+
+                var getShakerValue = function() {
+                    //your jQuery ajax code
+                    $.ajax({
+                        type: "GET",
+                        url: "jsonshaker",
+                        success: function(data) {
+                            shaker(data.shaker);
+                        }
+                    });
+                };
+
+                var getFullStatus = function() {
+
+                    $.getJSON("test.json", function(data) {
+                        json_auswerten(data);
+                    });
+
+                    //your jQuery ajax code
+                    $.ajax({
+                        type: "GET",
+                        url: "jsonstatus",
+                        success: function(data) {
+                            json_auswerten(data);
+                        }
+                    });
+                };
+
+                var timing_events = [];
+                timing_events.push(
+                        {name: "SekAirValue", periode: 2, cur: 2, func: getSekAirValue},
+                {name: "ShakerValue", periode: 3, cur: 3, func: getShakerValue},
+                {name: "FullStatus", periode: 60, cur: 1, func: getFullStatus}
+                );
+
+                var time_machine = function() {
+                    $.each(timing_events, function(i, item) {
+                        item.cur--;
+                        if (item.cur === 0) {
+                            item.func();
+                            item.cur = item.periode;
+
+                        }
+                    });
+                    timedRefresh();
+                };
+                function timedRefresh() {
+                    if(window.blurred) {
+                        setTimeout(timedRefresh, 100);
+                        return;
+                    }
+                    setTimeout(time_machine, 1000);
+                   
+                }
+                
+                $('#tabs').bind('tabsselect', function(evt, ui) { 
+                    alert("TEST1");
+    console.log($('#tabs').find('li.ui-tabs-selected a').attr('href')); 
+});
+
+                window.onpagehide= function() {alert("TEST");};
+                window.nblur = function() {window.blurred = true;};
+                window.onfocus = function() {window.blurred = false;};
+                
+                timedRefresh();
+
+
+
+            });
+
+
+        </script>
+    </head>
+    <body>
+        <div id="dialog" title="">
+            <p></p>
+        </div>
+        <div id="ctrl_btn">
+            <button value="Refresh" id="btnRefresh" ></button>
+            <button value="Restart" id="btnRestart" >Regelung<br/>rücksetzen</button>
+        </div>
+        <div id="status">
+            <div id="control_state" class="unknow"><span>Unbekannt</span></div>
+            <div style=" height: 330px;   width: 100%;">
+
+                <div id="brenner">
+                    <div id="abgasverlust"><p>Abgasverlust<br/><span class="value">20</span>%</p></div>
+                    <div id="abgas_temp">
+                        <div id="abgas_gauge" style="width:100px; height:80px"></div>
+                        <!-- <p>Abgastemperatur<br/><span class="value">100</span>°C</p>-->
+                    </div>
+                    <div id="lambdacheck">
+                        <div id="sek_air_gauge" style="width:100px; height:80px"></div>
+                        <!-- <p>Sekundärluft-<br/>ansteuerung<br/><span class="value">?</span>mV</p>-->
+                    </div>
+                    <div id="verlust"><p>Leistungsverlust<br/><span class="value">?</span><br/><span class="zeit">?</span></p></div> 
+                    <div id="nachlegen"><p>Nachlegen<br><span class="value">0</span>kg</p></div>
+                    <div id="brenner_temp">
+                        <div id="brenner_gauge" style="width:100px; height:80px"></div>
+                        <!--<p>Brennertemperatur<br><span class="value">800</span>°C</p>-->
+                    </div>
+                    <div id="o2"><p>Sauerstoff<br><span class="value">20</span>%</p></div>
+
+                </div>
+                <div id="outtemp">
+                    <div class="outtemp"><p>Aussentemperatur</p></div>
+                    <canvas id="thermo" height="300" width="200"></canvas><div style="clear:both"></div>
+
+                </div> 
+                <div id="puffer_block" class="puffer">
+
+                    <div id="puffer_durchschnitt"><p>Gesamt &Oslash; / Nutzenergie<br><span class="value">?°C / ?KWh</span></p></div>
+                    <div id="puffer">
+                        <select id="cobo_pick_puffer">
+                            <option value="0">Puffer 1</option>
+
+                        </select>
+                        <div id="puffer_1" class="temp"></div>
+                    </div>
+                </div>
+
+
+            </div>
+            <div id="control" style="clear:both;">
+                <table id="control_info" 
+                       class="display dataTable" style="width: 100%;">
+                    <thead>
+                        <tr>
+                            <th></th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                </table>
+            </div>
+            <div id="ruettler" style="clear:both;">
+                <button value="on" id="btnRuettler" >Rüttler start</button>
+                <button value="0" id="btnRuettlerReset" >Rüttler rücksetzen</button>
+                <div class="trafficlight">
+                    <div class="red dark_light"></div>
+                    <div class="yellow dark_light"></div>
+                    <div class="green dark_light"></div>
+                </div>
+                <table id="ruettler_info" class="display dataTable" style="width: 90%;">
+                    <thead>
+                        <tr>
+                            <th>Pos.</th>
+                            <th>Gestartet nach (min.)</th>
+                            <th>Rütteldauer (min.)</th>
+                            <th>Rüttelhübe</th>
+                        </tr>
+                    </thead>
+                </table>
+                <div id="shakeing_count">Aktivierungen: <span class="value">0</span></div>
+                <div id="shake_count">Gesamt Rüttelhübe: <span class="value">0</span></div>
+            </div>
+            <div id="sollwert" style="clear:both;">
+                <table id="sollwert_info" 
+                       class="display dataTable" style="width: 100%;">
+                    <thead>
+                        <tr>
+                            <th>Im Soll (min.)</th>
+                            <th>Nicht im Soll (min.)</th>
+                            <th>Sollwertfaktor (%)</th>
+                        </tr>
+                    </thead>
+                </table>
+            </div>
+        </div>
+
+    </body>
+</html>
