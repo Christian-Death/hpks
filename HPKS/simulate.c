@@ -45,9 +45,9 @@ int simulate_init() {
 
   snprintf(sim_inifile, PATH_MAX, "%s/%s", app_fullpath, SIM_FILE_NAME);
   if ((0 == stat(sim_inifile, &buf)) && (S_ISREG(buf.st_mode))) {
-    dbg_printf("Konfigfile %s gefunden", sim_inifile);
+    dbg_printf("Konfigfile %s gefunden\n", sim_inifile);
   } else {
-    dbg_printf("Konfigfile %s nicht gefunden", sim_inifile);
+    dbg_printf("Konfigfile %s nicht gefunden\n", sim_inifile);
   }
 }
 

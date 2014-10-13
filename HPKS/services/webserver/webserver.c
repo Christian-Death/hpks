@@ -41,7 +41,7 @@
 #define POSTBUFFERSIZE  2048
 #define MAX_STRING_POST_SIZE 20000
 
-#define ROOT_PATH "/home/pi/test/pufferkontrollsystem/www/"
+//#define ROOT_PATH "/home/pi/test/pufferkontrollsystem/www/"
 
 #define PAGE_FILE_NOT_FOUND "<html><head><title>File not found</title></head><body>File not found</body></html>"
 #define PAGE_JSONRPC_INFO   "<html><head><title>JSONRPC</title></head><body>JSONRPC active and working</body></html>"
@@ -78,6 +78,8 @@ typedef enum {
 static unsigned int nr_of_clients = 0;
 char *string_to_base64(const char *message);
 const char *CreateMimeTypeFromExtension(const char *ext);
+
+char *www_root_path;
 
 static uint8_t m_running;
 static struct MHD_Daemon *m_daemon;
@@ -303,7 +305,7 @@ int CreateFileDownloadResponse(struct MHD_Connection *connection, const char *st
 
   char fullpath[PATH_MAX];
 
-  snprintf(fullpath, PATH_MAX, "%s%s", ROOT_PATH, strURL);
+  snprintf(fullpath, PATH_MAX, "%s%s",  www_root_path, strURL);
   if ((0 == stat(fullpath, &buf)) &&(S_ISREG(buf.st_mode)))
     file = fopen(fullpath, "rb");
   else
@@ -654,7 +656,9 @@ uint8_t webserver_start(int port)
     }
     (void)close(fd);
 
-
+    www_root_path = app_config_get_www_path();
+    dbg_printf("WWW Root Path: %s \n", www_root_path);
+      
     unsigned int timeout = 60 * 60 * 24;
     // MHD_USE_THREAD_PER_CONNECTION = one thread per connection
     // MHD_USE_SELECT_INTERNALLY = use main thread for each connection, can only handle one request at a time [unless you set the thread pool size]
@@ -682,6 +686,11 @@ uint8_t webserver_start(int port)
                                   MHD_OPTION_NOTIFY_COMPLETED, request_completed, NULL,
                                   MHD_OPTION_END);
     m_running = m_daemon != NULL;
+    
+    if(m_running)
+      dbg_printf("Webserver gestartet \n");
+    else
+      dbg_printf("Webserver start fehlgeschlagen\n");
     /*
         if (m_running)
           CLog::Log(LOGNOTICE, "WebServer: Started the webserver");

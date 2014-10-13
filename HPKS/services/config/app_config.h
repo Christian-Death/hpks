@@ -43,6 +43,7 @@ int app_config_write_ds18b20();
 double app_config_get_endleistung();
 bool app_config_is_simulate_mode();
 bool app_config_get_use_server();
+char* app_config_get_www_path();
 uint app_config_get_server_port();
 bool app_config_get_use_abgas_temp();
 USED_ABGAS_SONDE_e app_config_get_used_abgas_sonde();

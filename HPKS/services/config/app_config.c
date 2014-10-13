@@ -53,6 +53,7 @@ struct {
   USED_ABGAS_SONDE_e use_abgas_sonde;
   int use_ruettler;
   int use_webserver;
+  char www_path[FILENAME_MAX];
   unsigned int port;
 
   int puffer_count;
@@ -69,6 +70,7 @@ struct {
   int abgas_end_temp;
   time_t endtime;
   double endleistung;
+  
 } CONFIG_DATA_struct;
 
 
@@ -299,11 +301,11 @@ int app_config_read()
   snprintf(config_inifile, PATH_MAX, "%s/%s", app_fullpath, CONFIG_FILE_NAME);
   if ((0 == stat(config_inifile, &buf)) && (S_ISREG(buf.st_mode)))
   {
-    dbg_printf("Konfigfile %s gefunden", config_inifile);
+    dbg_printf("Konfigfile %s gefunden\n", config_inifile);
   }
   else
   {
-    dbg_printf("Konfigfile %s nicht gefunden", config_inifile);
+    dbg_printf("Konfigfile %s nicht gefunden\n", config_inifile);
   }
 
   //n = ini_gets("general", "string", "dummy", str, sizearray(str), config_inifile);
@@ -357,9 +359,14 @@ int app_config_read()
   config_data.use_window = n;
   n = ini_getbool(ini_session_general, "USE_WEBSERVER", 1, config_inifile);
   config_data.use_webserver = n;
+
+  n = ini_gets(ini_session_general, "WWW_PATH", DEF_WWW_PATH, config_data.www_path, sizearray(config_data.www_path), config_inifile);
+ 
   n = ini_getl(ini_session_general, "SERVER_PORT", DEF_SERVER_PORT, config_inifile);
   config_data.port = n;
 
+  
+  
   config_data.hb_time = 2;
 
   return (EXIT_SUCCESS);
@@ -406,6 +413,11 @@ int app_config_save()
 
   app_config_write_puffers();
   app_config_write_shaker();
+}
+
+char* app_config_get_www_path()
+{
+  return config_data.www_path;
 }
 
 void app_config_save_endstate(time_t endtime, double endleistung)

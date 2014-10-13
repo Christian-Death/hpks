@@ -44,6 +44,8 @@ extern "C" {
 #define DEF_MIN_PUFFER_TEMP 40
   
 #define DEF_HEIZWERT_HOLZ 3.5
+    
+#define DEF_WWW_PATH "/home/pi/test/pufferkontrollsystem/www/"
 #define DEF_SERVER_PORT 5100
 
 #define DEF_SHAKER_AKTIVE 0.5
