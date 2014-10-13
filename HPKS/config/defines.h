@@ -55,7 +55,7 @@ extern "C" {
 #define DEF_SHAKING_COUNT 20
 #define DEF_ABGAS_END_TEMP 100
   
-
+#define DEF_SHAKER_BLOCK_TIME_SEC 5
 
 extern char app_fullpath[FILENAME_MAX];
 

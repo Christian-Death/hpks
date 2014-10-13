@@ -52,7 +52,8 @@ typedef enum {
 
 static eSHAKER_STATE shaker_state = SHAKER_IDLE;
 static eSHAKERS shakers = 0;
-
+static time_t shaker_block_time;
+static uint8_t shaker_block;
 /*********************************************************************/
 
 
@@ -155,9 +156,23 @@ void clear_shake_list(void)
 /**************************************************************/
 static void set_shaker_on(int nr)
 {
+  
+  
+  if(shaker_block)  {
+    return;
+  }
+  else  {
+    time_t akt_time = time(NULL);
+    if(difftime(akt_time, shaker_block_time) < DEF_SHAKER_BLOCK_TIME_SEC )
+      return;
+  }
+  
+  shaker_block |= nr;
+  
   switch (nr)
   {
     case SHAKER_NUM1:
+      
 #ifdef USE_PORTEXPANDER  
       mcp23s17_set_pin(PORT_A, PIN0);
 #else
@@ -186,6 +201,10 @@ static void set_shaker_on(int nr)
 
 static void set_shaker_off(int nr)
 {
+  if(shaker_block)
+    shaker_block_time = time(NULL);
+  
+  shaker_block &= ~nr;
   switch (nr)
   {
     case SHAKER_NUM1:
