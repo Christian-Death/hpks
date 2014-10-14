@@ -344,7 +344,7 @@ void shaker_work()
         }
         shaker_shake_count++;
         cur_shake_info->count++;
-        if (++reuttler_change_count >= app_config_get_ruettler_loop())
+        if (!app_config_get_shake_alltimes() && (++reuttler_change_count >= app_config_get_ruettler_loop()))
         {
           shaker_state = SHAKER_IDLE;
           ruettler_on = OFF;

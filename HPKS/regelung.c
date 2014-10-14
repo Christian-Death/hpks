@@ -122,20 +122,22 @@ Restsauerstoff geht unter 7 % - alles o.k.
   switch (regel_state)
   {
     case wait_for_activate:
-      if (lambda_check_last_value() > 1000.0)
-      {
-        regel_state = im_soll;
-        time_soll = time_nicht_soll = 0;
-        akt_time = starttime = time(NULL);
+      if(app_config_get_shake_alltimes()) {
+        if( temp_abgas_last_value() > 150)
+        {
+          akt_time = starttime = time(NULL);
+          run_shaker(starttime, akt_time);
+          regel_state = nicht_im_soll;
+        }
       }
-      
-      if(app_config_get_shake_alltimes() && temp_abgas_last_value() > 150)
-      {
-        akt_time = starttime = time(NULL);
-        run_shaker(starttime, akt_time);
-        regel_state = nicht_im_soll;
+      else {
+        if (lambda_check_last_value() > 1000.0)
+        {
+          regel_state = im_soll;
+          time_soll = time_nicht_soll = 0;
+          akt_time = starttime = time(NULL);
+        }
       }
-
       break;
     case im_soll:
       last_time = akt_time;
