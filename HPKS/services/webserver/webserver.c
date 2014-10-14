@@ -29,6 +29,7 @@
 #include <sys/select.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
+#include <netinet/in.h>
 #include <microhttpd.h>
 
 #include "defines/used_includes.h"
@@ -623,7 +624,6 @@ int is_authenticated(struct MHD_Connection *connection,
 // Parameter: -
 // Return:    -
 //--------------------------------------------------------------------------------------------------
-
 uint8_t webserver_start(int port)
 {
   const char*a = MHD_get_version();
@@ -660,26 +660,52 @@ uint8_t webserver_start(int port)
     dbg_printf("WWW Root Path: %s \n", www_root_path);
       
     unsigned int timeout = 60 * 60 * 24;
+    
+    struct sockaddr_in daemon_ip_addr;
+#if HAVE_INET6
+  struct sockaddr_in6 daemon_ip_addr6;
+#endif
+
+  memset (&daemon_ip_addr, 0, sizeof (struct sockaddr_in));
+  daemon_ip_addr.sin_family = AF_INET;
+  daemon_ip_addr.sin_port = htons (port);
+
+#if HAVE_INET6
+  memset (&daemon_ip_addr6, 0, sizeof (struct sockaddr_in6));
+  daemon_ip_addr6.sin6_family = AF_INET6;
+  daemon_ip_addr6.sin6_port = htons (port);
+#endif
+
+  inet_pton (AF_INET, "127.0.0.1", &daemon_ip_addr.sin_addr);
+#if HAVE_INET6
+  inet_pton (AF_INET6, "::ffff:127.0.0.1", &daemon_ip_addr6.sin6_addr);
+#endif
+  
+#if HAVE_INET6
+    
     // MHD_USE_THREAD_PER_CONNECTION = one thread per connection
     // MHD_USE_SELECT_INTERNALLY = use main thread for each connection, can only handle one request at a time [unless you set the thread pool size]
     m_daemon = MHD_start_daemon(MHD_USE_SELECT_INTERNALLY | MHD_USE_IPv6 | MHD_USE_DEBUG,
                                 port,
                                 NULL, NULL,
                                 &AnswerToConnection, NULL,
-                                MHD_OPTION_DIGEST_AUTH_RANDOM, sizeof (rnd), rnd,
-                                MHD_OPTION_NONCE_NC_SIZE, 300,
+                                //MHD_OPTION_DIGEST_AUTH_RANDOM, sizeof (rnd), rnd,
+                                //MHD_OPTION_NONCE_NC_SIZE, 300,
+                                MHD_OPTION_SOCK_ADDR, &daemon_ip_addr6,
                                 MHD_OPTION_THREAD_POOL_SIZE, 8,
                                 MHD_OPTION_CONNECTION_LIMIT, 512,
                                 MHD_OPTION_CONNECTION_TIMEOUT, timeout,
                                 MHD_OPTION_NOTIFY_COMPLETED, request_completed, NULL,
                                 MHD_OPTION_END);
     if (!m_daemon) //try IPv4
+#endif
       m_daemon = MHD_start_daemon(MHD_USE_SELECT_INTERNALLY | MHD_USE_DEBUG,
                                   port,
                                   NULL, NULL,
                                   &AnswerToConnection, NULL,
                                   //MHD_OPTION_DIGEST_AUTH_RANDOM, sizeof (rnd), rnd,
                                   //MHD_OPTION_NONCE_NC_SIZE, 600,
+                                  MHD_OPTION_SOCK_ADDR, &daemon_ip_addr,
                                   MHD_OPTION_THREAD_POOL_SIZE, 8,
                                   MHD_OPTION_CONNECTION_LIMIT, 512,
                                   MHD_OPTION_CONNECTION_TIMEOUT, timeout,
