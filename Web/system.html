@@ -1,0 +1,79 @@
+<!--
+/*
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ * 
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ * 
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * 
+ * File:   index.html
+ * Author: Christian Rost  <rost at entronix.de>
+ *
+ * Created on 02. April 2013, 19:04
+ */
+-->
+<!DOCTYPE html>
+<html>
+    <head>
+        <title></title>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <script type="text/javascript">
+            // jQuery folgt hier
+            $(document).ready(function () {
+                $("#btnShutdown")
+                        .click(function (event) {
+                            event.preventDefault();
+                            //your jQuery ajax code
+                            var mydata = {};
+                            mydata['action'] = 'shutdown';
+                            $.ajax({
+                                type: "POST",
+                                url: "system",
+                                data: mydata,
+                                success: function (data) {
+                                    ShowInfoDlg(data.message);
+                                },
+                                error: function (e) {
+                                    alert('oops: ' + e);
+                                }
+                            });
+                        });
+                $("#btnReboot")
+                        .click(function (event) {
+                            event.preventDefault();
+                            //your jQuery ajax code
+                            var mydata = {};
+                            mydata['action'] = 'reboot';
+                            $.ajax({
+                                type: "POST",
+                                url: "system",
+                                data: mydata,
+                                success: function (data) {
+                                    ShowInfoDlg(data.message);
+                                },
+                                error: function (e) {
+                                    alert('oops: ' + e);
+                                }
+                            });
+                        });
+            });
+
+
+        </script>
+    </head>        
+
+    <body>
+        <div>
+            <button value="0" id="btnShutdown" >System runter fahren</button>
+            <button value="0" id="btnReboot" >System neu starten</button>
+        </div>
+    </body>
+</html>

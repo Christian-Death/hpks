@@ -79,10 +79,15 @@ html, body, #status {
 #brenner {
   position: relative;
   width: 400px;
-  background-image: url("../img/brenner.gif");
+  background-image: url("../img/heizung.png");
   background-repeat: no-repeat;
   background-size: contain;
   /*  background-position-y: bottom;*/
+  margin: 10px 0 10px 0;
+}
+#abgas_gauge,
+#sek_air_gauge{
+  margin-left:auto;margin-right:auto;
 }
 #outtemp {
   position: relative;
@@ -114,7 +119,7 @@ html, body, #status {
   width: 100%;
   height: 100%;
   background-size: contain;
-  background-image: url("../img/puffer.gif");
+  background-image: url("../img/puffer.png");
   background-repeat: no-repeat;
   background-position: 50%;
 
@@ -157,7 +162,7 @@ html, body, #status {
 }
 
 #abgas_temp {
-  top: 10%;
+  top: 12%;
   right: 0;
 }
 

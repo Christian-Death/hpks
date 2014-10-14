@@ -448,6 +448,17 @@
                     });
                 };
 
+                var getRegelungActive = function() {
+                    //your jQuery ajax code
+                    $.ajax({
+                        type: "GET",
+                        url: "jsonrglactive",
+                        success: function(data) {
+                            control(data.control);
+                        }
+                    });
+                };
+                
                 var getFullStatus = function() {
 
                     $.getJSON("test.json", function(data) {
@@ -468,6 +479,7 @@
                 timing_events.push(
                         {name: "SekAirValue", periode: 2, cur: 2, func: getSekAirValue},
                 {name: "ShakerValue", periode: 3, cur: 3, func: getShakerValue},
+                {name: "RegelungActive", periode: 5, cur: 5, func: getRegelungActive},
                 {name: "FullStatus", periode: 60, cur: 1, func: getFullStatus}
                 );
 
