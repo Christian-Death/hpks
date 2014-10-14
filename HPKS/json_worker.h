@@ -39,10 +39,11 @@ extern "C" {
     typedef enum JSON_GET_enum {
         HVS_SEND_JSON_STATUS = 6,
         HVS_SEND_JSON_CONFIG,
+        HVS_SEND_JSON_REGELUNGACTIVE,
         HVS_SEND_JSON_LOG,
         HVS_SEND_JSON_DS18B20,
-                HVS_SEND_JSON_SEKAIR,
-                HVS_SEND_JSON_SHAKER,
+        HVS_SEND_JSON_SEKAIR,
+        HVS_SEND_JSON_SHAKER,
     } JSON_GET_e;
 
     typedef enum JSON_POST_enum {
@@ -50,6 +51,7 @@ extern "C" {
         HVS_JSON_SHAKER_POST,
         HVS_JSON_CONFIG_POST,
         HVS_JSON_STATUS_POST,
+        HVS_JSON_SYSTEM_POST,
     } JSON_POST_e;
 
     //#define MONETDB_REST_PATH_ALLDBS "_all_dbs"

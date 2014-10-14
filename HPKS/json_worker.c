@@ -53,8 +53,11 @@ static int create_ds18b20_json(char **result);
 static int create_log_json(char **result);
 static int create_status_json(char **result);
 static int create_config_json(char **result);
+static int control_json_status(json_object * jobj);
 static int create_shaker_json(char **result);
 static int create_sekair_json(char **result);
+static int create_regelung_active_json(char **result);
+
 static int ruettler_json_status(json_object * jobj);
 
 void post_json_parse(json_object* jobj);
@@ -116,6 +119,10 @@ static int browser_get(const UriUriA uri, char **result)
       else if (!strcmp(filename, "/jsonshaker"))
       {
         rest_command = HVS_SEND_JSON_SHAKER;
+      }
+      else if (!strcmp(filename, "/jsonrglactive"))
+      {
+        rest_command = HVS_SEND_JSON_REGELUNGACTIVE;
       }
       else if (!strcmp(filename, "/jsonstatus"))
       {
@@ -187,6 +194,10 @@ static int browser_post(const UriUriA uri)
     else if (!strcmp(filename, "/status"))
     {
       rest_command = HVS_JSON_STATUS_POST;
+    }
+    else if (!strcmp(filename, "/system"))
+    {
+      rest_command = HVS_JSON_SYSTEM_POST;
     }
     free(filename);
   }
@@ -298,6 +309,11 @@ int handle_http_request(const char *url, const char *method, char **page,
       create_status_json(page);
       ret = HVS_SEND_MEMORY;
       break;
+    case HVS_SEND_JSON_REGELUNGACTIVE:
+      create_regelung_active_json(page);
+      ret = HVS_SEND_MEMORY;
+      break;
+      
     case HVS_SEND_JSON_CONFIG:
       create_config_json(page);
       ret = HVS_SEND_MEMORY;
@@ -336,7 +352,10 @@ int handle_http_request(const char *url, const char *method, char **page,
       json_status_Post(page, con_info);
       ret = HVS_SEND_MEMORY;
       break;
-
+    case HVS_JSON_SYSTEM_POST:
+      json_system_Post(page, con_info);
+      ret = HVS_SEND_MEMORY;
+      break;
     default:
       // error, unknown command
       ret = 1;
@@ -394,6 +413,34 @@ int json_status_Post(char **result, struct connection_info_struct *con_info)
     else
       *result = strdup("{\"message\":\"Regelung nicht aktiv\"}");
 
+  }
+  else
+  {
+    *result = strdup("{\"message\":\"fehler\"}");
+  }
+}
+
+//--------------------------------------------------------------------------------------------------
+// Name:      json_system_Post
+// Function:  -
+//            
+// Parameter: -
+// Return:    -
+//--------------------------------------------------------------------------------------------------
+
+int json_system_Post(char **result, struct connection_info_struct *con_info)
+{
+  if (strcmp(con_info->action, "reboot") == 0)
+  {
+    
+    *result = strdup("{\"message\":\"System wird neu gestartet\"}");
+    system_reboot();
+  }
+  else if (strcmp(con_info->action, "shutdown") == 0)
+  {
+    
+    *result = strdup("{\"message\":\"System wird herunter gefahren\"}");
+    system_shutdown();
   }
   else
   {
@@ -861,6 +908,27 @@ static int create_sekair_json(char **result)
   return 1;
 }
 
+
+//--------------------------------------------------------------------------------------------------
+// Name:      create_sekair_json
+// Function:  -
+//            
+// Parameter: -
+// Return:    -
+//--------------------------------------------------------------------------------------------------
+
+static int create_regelung_active_json(char **result)
+{
+  /*Creating a json object*/
+  json_object * jobj = json_object_new_object();
+
+  control_json_status(jobj);
+ 
+  *result = strdup(json_object_to_json_string(jobj));
+  json_object_put(jobj);
+  return 1;
+}
+
 //--------------------------------------------------------------------------------------------------
 // Name:      create_shaker_json
 // Function:  -
@@ -1274,7 +1342,7 @@ static int puffer_json_status(json_object * jobj)
     json_object_object_add(ResultObj_Values1, "nachlegen", json_object_new_string(buffer));
     sprintf(buffer, "%.2f", durch_temp);
     json_object_object_add(ResultObj_Values1, "puffer_durchschnitt", json_object_new_string(buffer));
-    sprintf(buffer, "%.2f", aussen_temp);
+    sprintf(buffer, "%.0f", aussen_temp);
     json_object_object_add(ResultObj_Values1, "outtemp", json_object_new_string(buffer));
   }
 
