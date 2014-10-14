@@ -589,13 +589,17 @@ int json_DS18B20_Post(char **result, struct connection_info_struct *con_info)
 void config_data_evaluate()
 {
 
-  char * sShakeTime = get_hashtab("shake_time");
-  char * sShaking = get_hashtab("shaking");
+
   char * sPufferCount = get_hashtab("puffer_count");
   int iPufferCount = atoi(sPufferCount);
 
   char * sMaxPufferTemp = get_hashtab("max_puffer_temp");
   char * sMinPufferTemp = get_hashtab("min_puffer_temp");
+  
+  char * sShakeTime = get_hashtab("shake_time");
+  char * sShaking = get_hashtab("shaking");
+  char * sShakeAllTime = get_hashtab("shake_alltimes");
+  
   char * sShakeMaxCount = get_hashtab("shake_max_count");
   char * sShakePause = get_hashtab("shake_pause");
 
@@ -626,7 +630,10 @@ void config_data_evaluate()
   if (sShakePause != NULL) app_config_set_ruettler_off_time(atoi(sShakePause));
   if (sShakeMaxCount != NULL) app_config_set_ruettler_loop(atoi(sShakeMaxCount));
   if (sAbgas_end_temp != NULL) app_config_set_abgas_end_temp(atoi(sAbgas_end_temp));
-
+  
+  if (sShakeAllTime != NULL) app_config_set_shake_alltimes(1);
+  else app_config_set_shake_alltimes(0);
+  
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -989,6 +996,7 @@ static int create_config_json(char **result)
   json_object_object_add(jobj, "shake_time", json_object_new_int(app_config_get_ruettler_on_time()));
   json_object_object_add(jobj, "shake_pause", json_object_new_int(app_config_get_ruettler_off_time()));
   json_object_object_add(jobj, "shake_max_count", json_object_new_int(app_config_get_ruettler_loop()));
+  json_object_object_add(jobj, "shake_alltimes", json_object_new_int(app_config_get_shake_alltimes()));
 
   /*Now printing the json object*/
   //printf("The json object created: %sn", json_object_to_json_string(jobj));

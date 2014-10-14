@@ -96,6 +96,16 @@
           max: 50,
           step: 1
         });
+        
+        $('#chebo_shake_alltimes').change(function() {
+            if ($(this).is(':checked')) {
+                $("#shaker_config").css("display", "none");
+                $(this).prop("value","1");
+            }else{
+                $("#shaker_config").css("display", "");
+                $(this).prop("value","0");
+            }
+        });
 
         $("#btnSave").button().click(function(event) {
           event.preventDefault();
@@ -193,6 +203,11 @@
 
           });
         }
+        function set_checkbox(data) {
+          $('#chebo_shake_alltimes').prop('checked', (data.shake_alltimes === 1)?true:false);
+          $('#chebo_shake_alltimes').trigger("change");
+        }
+        
         function load_config() {
           //your jQuery ajax code
           $.ajax({
@@ -200,7 +215,7 @@
             url: "jsonconfig",
             success: function(data) {
               set_spinner(data);
-
+              set_checkbox(data);
             }
           });
         }
@@ -254,20 +269,24 @@
         <p>
           <label for="spinner_shake_pause">Pausenzeit (10 - 150 sec.)</label>
           <input id="spinner_shake_pause" name="shake_pause" />
-        </p>      
+        </p> 
         <p>
-          <label for="spinner_shake_start">Startkriterium (0,5 V)</label>
-          <input id="spinner_shake_start" name="shake_start" />
+            <input id="chebo_shake_alltimes" type="checkbox" name="shake_alltimes" value="0" />Rüttler immer an
         </p>
-        <p>
-          <label for="spinner_shaking">Rüttelkriterium (0,6 V - 1,5 V)</label>
-          <input id="spinner_shaking" name="shaking" value="1" />
-        </p>
-        <p>
-          <label for="spinner_shake_max_count">Rüttelhübe bis Ausbrand erkannt (5 - 50)</label>
-          <input id="spinner_shake_max_count" name="shake_max_count" />
-        </p>      
-
+        <div id="shaker_config">
+            <p>
+              <label for="spinner_shake_start">Startkriterium (0,5 V)</label>
+              <input id="spinner_shake_start" name="shake_start" />
+            </p>
+            <p>
+              <label for="spinner_shaking">Rüttelkriterium (0,6 V - 1,5 V)</label>
+              <input id="spinner_shaking" name="shaking" value="1" />
+            </p>
+            <p>
+              <label for="spinner_shake_max_count">Rüttelhübe bis Ausbrand erkannt (5 - 50)</label>
+              <input id="spinner_shake_max_count" name="shake_max_count" />
+            </p>      
+        </div>
       </div>
     </form>
     <button id="btnSave">Save</button>

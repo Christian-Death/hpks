@@ -91,6 +91,11 @@ int app_config_set_ruettler_off_time(int value) ;
 int app_config_get_ruettler_loop();
 int app_config_set_ruettler_loop(int value);
 
+int app_config_get_shake_alltimes();
+int app_config_set_shake_alltimes(int value);
+
+
+
 #ifdef	__cplusplus
 }
 #endif

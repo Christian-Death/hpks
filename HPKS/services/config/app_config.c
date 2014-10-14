@@ -38,6 +38,7 @@ typedef struct {
   int on_time;
   int off_time;
   int loop;
+  int shake_always;
 } RUETTLER_CONFIG_INI_struct;
 
 typedef
@@ -265,6 +266,8 @@ int app_config_read_shaker()
   config_data.shaker.off_time = n;
   n = ini_getl(ini_session_shaker, "anzahl", DEF_SHAKING_COUNT, config_inifile);
   config_data.shaker.loop = n;
+  n = ini_getl(ini_session_shaker, "durchgehend", 0, config_inifile);
+  config_data.shaker.shake_always = n;
 
 }
 
@@ -282,6 +285,7 @@ int app_config_write_shaker()
 
   n = ini_putl(ini_session_shaker, "anzahl", config_data.shaker.loop, config_inifile);
 
+  n = ini_putl(ini_session_shaker, "durchgehend", config_data.shaker.shake_always, config_inifile);
 
 }
 
@@ -585,6 +589,17 @@ int app_config_set_ruettler_loop(int value)
   config_data.shaker.loop = value;
 }
 
+int app_config_get_shake_alltimes()
+{
+  return config_data.shaker.shake_always;
+}
+
+int app_config_set_shake_alltimes(int value)
+{
+  
+  config_data.shaker.shake_always = value;
+}
+
 int puffer_volume;
 
 long app_config_get_max_volume()
@@ -687,6 +702,11 @@ int app_config_set_puffer_volume(int puffer, int volume)
   config_data.puffer_volume[puffer] = volume;
   return config_data.puffer_volume[puffer];
 }
+
+
+
+
+
 
 int app_config_get_light_on_time()
 {

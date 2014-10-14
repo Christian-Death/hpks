@@ -128,6 +128,13 @@ Restsauerstoff geht unter 7 % - alles o.k.
         time_soll = time_nicht_soll = 0;
         akt_time = starttime = time(NULL);
       }
+      
+      if(app_config_get_shake_alltimes() && temp_abgas_last_value() > 150)
+      {
+        akt_time = starttime = time(NULL);
+        run_shaker(starttime, akt_time);
+        regel_state = nicht_im_soll;
+      }
 
       break;
     case im_soll:
@@ -141,9 +148,10 @@ Restsauerstoff geht unter 7 % - alles o.k.
       }
 
       time_soll += difftime(akt_time, last_time);
-      if (/*pt100_last_value() < app_config_get_abgas_end_temp() && */get_current_shaker_count() >= app_config_get_ruettler_loop())
+      if (get_current_shaker_count() >= app_config_get_ruettler_loop())
         regel_state = ende;
       break;
+      
     case nicht_im_soll:
       last_time = akt_time;
       akt_time = time(NULL);
@@ -154,9 +162,18 @@ Restsauerstoff geht unter 7 % - alles o.k.
         // innerhalb sollwert
       }
       time_nicht_soll += difftime(akt_time, last_time);
-      if (/*pt100_last_value() < app_config_get_abgas_end_temp() &&*/get_current_shaker_count() >= app_config_get_ruettler_loop())
+      
+      if(app_config_get_shake_alltimes()) {
+        if( temp_abgas_last_value() < 80) {
+          regel_state = ende;
+        }
+      }
+      else if (get_current_shaker_count() >= app_config_get_ruettler_loop()) {
         regel_state = ende;
+      }
+      
       break;
+      
     case ende:
       /*
       time(&ist_nicht_soll);
