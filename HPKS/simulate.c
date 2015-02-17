@@ -75,3 +75,8 @@ int simulate_get_k_sonde_brenner() {
   return n;
 }
 
+int simulate_get_durch_temp() {
+  long n;
+  n = ini_getl("", "durch_puffer_temp", 30, sim_inifile);
+  return n;
+}

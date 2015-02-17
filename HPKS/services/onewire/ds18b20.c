@@ -234,10 +234,21 @@ DS18B20_struct *ds18b20_getDevicewithID(const char* ID)
   return NULL;
 }
 
+void ds18b20_refreshData()
+{
+  int i = ds18b20_getDeviceList();
+  while (i--) {
+    ds18b20_readData();
+    SleepMs(10);
+  };
+  app_config_read_ds18b20();
+      
+  control_ds18b20_count = 0;
+
+}
+
 void ds18b20_getData() {
   if (!is_Init) return;
-
-
 
   if (++control_ds18b20_count > 30) {
     int count = ds18b20_controlDeviceCount();
@@ -245,7 +256,7 @@ void ds18b20_getData() {
       int i = ds18b20_getDeviceList();
       while (i--) {
         ds18b20_readData();
-        SleepMs(500);
+        SleepMs(10);
       };
       app_config_read_ds18b20();
     }
@@ -266,16 +277,22 @@ double ds18b20_get_durch_temp() {
   double puffer_temp = 0.0;
   int puffer_temp_count = 0;
 
-  for (int i = 0; i < _ds18b20_count; i++) {
-    ds18b20_dev = ds18b20_getDevice(i);
-    if (ds18b20_dev->crc) {
-      if (ds18b20_dev->puf_id != -1 && ds18b20_dev->puf_id != 255) {
-        puffer_temp += ds18b20_dev->tempGrad;
-        puffer_temp_count++;
+  if(app_config_is_simulate_mode())
+  {
+    return simulate_get_durch_temp();
+  }
+  else
+  {
+    for (int i = 0; i < _ds18b20_count; i++) {
+      ds18b20_dev = ds18b20_getDevice(i);
+      if (ds18b20_dev->crc) {
+        if (ds18b20_dev->puf_id != -1 && ds18b20_dev->puf_id != 255) {
+          puffer_temp += ds18b20_dev->tempGrad;
+          puffer_temp_count++;
+        }
       }
     }
+
+    return (puffer_temp / (double) puffer_temp_count);
   }
-
-  return (puffer_temp / (double) puffer_temp_count);
-
 }

@@ -443,19 +443,35 @@ void End(void)
 
 void time_func_tasks()
 {
-  if (func[cur_func].still_ms == 0)
+  struct timeval end_time, start_time, diff_time;
+  gettimeofday(&start_time, NULL);
+  
+  cur_func = func_count;
+  do
   {
-    func[cur_func].func();
-    func[cur_func].still_ms = func[cur_func].any_ms;
-  }
-  func[cur_func].still_ms--;
+    cur_func--;
+    if (func[cur_func].still_ms == 0)
+    {
+      func[cur_func].func();
+      func[cur_func].still_ms = func[cur_func].any_ms;
+    }
+    func[cur_func].still_ms--;
 
-  cur_func++;
-  if (cur_func >= func_count)
+/*
+    cur_func++;
+    if (cur_func >= func_count)
+    {
+      cur_func = 0;
+    }
+*/
+  }while(cur_func);
+  
+  gettimeofday(&end_time, NULL);
+  timersub(&end_time, &start_time, &diff_time);
+  if(!diff_time.tv_sec && diff_time.tv_usec < 900)
   {
-    cur_func = 0;
+    delayMicroseconds(1000-diff_time.tv_usec);
   }
-
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -545,7 +561,7 @@ int main(int argc, char** argv)
     //napms(500);
     //key = getch();
     //usleep(100);
-    bcm2835_delay(1);
+    //bcm2835_delay(1);
 
 #ifdef NDEBUG
     key = getkey();
@@ -555,7 +571,7 @@ int main(int argc, char** argv)
       break;
     }
 #endif      
-
+      
   } while (key == ERR);
 
 

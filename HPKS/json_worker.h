@@ -27,7 +27,9 @@
 extern "C" {
 #endif
 
-
+#include <json-c/json.h>
+    
+#include "services/webserver/webserver.h"
 
 #define HVS_SEND_PAGE 1
 #define HVS_URI_ERROR 255
@@ -63,7 +65,8 @@ extern "C" {
     } JsonParser;
 
     int init_json();
-    int handle_http_request(const char *url, const char *method, char **page,
+    void free_json(JsonParser *parser);
+    int handle_http_request(const char *url, HTTPMethod method, char **page,
             void ** postdata);
     int handle_json(void *coninfo_cls, size_t size);
     JsonParser* json_parser_new();

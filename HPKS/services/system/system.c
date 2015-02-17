@@ -16,7 +16,8 @@
 // Parameter: -
 // Return:    -
 //--------------------------------------------------------------------------------------------------
-void system_reboot() {
+void system_reboot() 
+{
   //reboot(RB_AUTOBOOT);
   system("sleep 5; shutdown -r now");
 }
@@ -28,7 +29,8 @@ void system_reboot() {
 // Parameter: -
 // Return:    -
 //--------------------------------------------------------------------------------------------------
-void system_shutdown() {
+void system_shutdown() 
+{
 //reboot(RB_HALT_SYSTEM);
 system("sleep 5; shutdown -h now");
 }

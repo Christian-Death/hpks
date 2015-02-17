@@ -32,6 +32,7 @@ int simulate_get_lambda();
 int simulate_get_pt100();
 int simulate_get_k_sonde_abgas();
 int simulate_get_k_sonde_brenner();
+int simulate_get_durch_temp();
 
 #ifdef	__cplusplus
 }

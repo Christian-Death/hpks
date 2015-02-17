@@ -72,7 +72,7 @@ int regelung_activ(uint8_t event)
     endtime = time(NULL);
     stop_shaker(endtime);
 
-    double Q = ((double)app_config_get_max_volume() * app_config_getd_spez_wasser() * (ds18b20_get_durch_temp() - app_config_get_max_puffer_temp())) / (3600.0);
+    double Q = ((double)app_config_get_max_volume() * app_config_getd_spez_wasser() * (app_config_get_max_puffer_temp()-ds18b20_get_durch_temp())) / (3600.0);
 
     app_config_save_endstate(endtime, Q);
     regel_state = wait_for_restart;
@@ -123,7 +123,7 @@ Restsauerstoff geht unter 7 % - alles o.k.
   {
     case wait_for_activate:
       if(app_config_get_shake_alltimes()) {
-        if( temp_abgas_last_value() > 150)
+        if( temp_abgas_last_value() > app_config_get_shake_alltimes_start())
         {
           akt_time = starttime = time(NULL);
           run_shaker(starttime, akt_time);
@@ -166,7 +166,7 @@ Restsauerstoff geht unter 7 % - alles o.k.
       time_nicht_soll += difftime(akt_time, last_time);
       
       if(app_config_get_shake_alltimes()) {
-        if( temp_abgas_last_value() < 80) {
+        if( temp_abgas_last_value() < app_config_get_shake_alltimes_end()) {
           regel_state = ende;
         }
       }

@@ -20,7 +20,7 @@
  * Created on 27. November 2012, 19:04
  */
 
-#include <json-c/json.h>
+
 #include <uriparser/Uri.h>
 #include <math.h>
 
@@ -39,6 +39,8 @@
 
 #define DEFAULT_PAGE        "index.html"
 
+#define MESSAGE_RETURN_STR        "msg"
+
 /*#### TYPEDEFS ###################*/
 struct url_struct {
   char* scheme;
@@ -48,15 +50,20 @@ struct url_struct {
   char* filename;
 };
 
+typedef struct AVERAGE_struct{
+  uint32_t count;
+  double sum;
+}AVERAGE_t;
+
 /*#### Function Prototyps ###################*/
-static int create_ds18b20_json(char **result);
-static int create_log_json(char **result);
-static int create_status_json(char **result);
-static int create_config_json(char **result);
+static int create_ds18b20_json(char **result, struct connection_info_struct *con_info);
+static int create_log_json(char **result, struct connection_info_struct *con_info);
+static int create_status_json(char **result, struct connection_info_struct *con_info);
+static int create_config_json(char **result, struct connection_info_struct *con_info);
 static int control_json_status(json_object * jobj);
-static int create_shaker_json(char **result);
-static int create_sekair_json(char **result);
-static int create_regelung_active_json(char **result);
+static int create_shaker_json(char **result, struct connection_info_struct *con_info);
+static int create_sekair_json(char **result, struct connection_info_struct *con_info);
+static int create_regelung_active_json(char **result, struct connection_info_struct *con_info);
 
 static int ruettler_json_status(json_object * jobj);
 
@@ -65,10 +72,12 @@ void post_json_parse(json_object* jobj);
 int json_Shaker_Post(char **result, struct connection_info_struct *con_info);
 int json_DS18B20_Post(char **result, struct connection_info_struct *con_info);
 int json_status_Post(char **result, struct connection_info_struct *con_info);
+int json_system_Post(char **result, struct connection_info_struct *con_info);
+int json_Config_Post(char **result, struct connection_info_struct *con_info);
 
 /*#### VARIABLE ###################*/
 char * json_data_type;
-
+static AVERAGE_t Pavg = {.count=0, .sum=0.0};
 //--------------------------------------------------------------------------------------------------
 // Name:      init_json
 // Function:  -
@@ -83,6 +92,23 @@ int init_json()
   register_json_handler((http_json_handler) & handle_json);
 }
 
+//--------------------------------------------------------------------------------------------------
+// Name:      free_json
+// Function:  -
+//            
+// Parameter: -
+// Return:    -
+//--------------------------------------------------------------------------------------------------
+
+void free_json(JsonParser *parser)
+{
+  if (NULL != parser)
+  {
+    json_tokener_free(parser->tok);
+    json_object_put(parser->root);
+    free(parser);
+  }
+}
 
 //--------------------------------------------------------------------------------------------------
 // Name:      browser_get
@@ -154,6 +180,97 @@ static int browser_get(const UriUriA uri, char **result)
   return rest_command;
 }
 
+typedef int (*GETorPOSTFunction) (char **result, struct connection_info_struct *con_info);
+
+typedef struct GET_POST_URL_FUNCT_struct {
+  HTTPMethod method;
+  char* url;
+  JSON_POST_e do_it;
+  GETorPOSTFunction func;
+} GET_POST_URL_FUNCT_t;
+
+
+static GET_POST_URL_FUNCT_t get_post_func[] = {
+  {.method = GET, .url = "/jsonsekair", .do_it = HVS_SEND_JSON_SEKAIR, .func = create_sekair_json},
+  {.method = GET, .url = "/jsonshaker", .do_it = HVS_SEND_JSON_SHAKER, .func = create_shaker_json},
+  {.method = GET, .url = "/jsonrglactive", .do_it = HVS_SEND_JSON_REGELUNGACTIVE, .func = create_regelung_active_json},
+  {.method = GET, .url = "/jsonstatus", .do_it = HVS_SEND_JSON_STATUS, .func = create_status_json},
+  {.method = GET, .url = "/jsonconfig", .do_it = HVS_SEND_JSON_CONFIG, .func = create_config_json},
+  {.method = GET, .url = "/jsonlog", .do_it = HVS_SEND_JSON_LOG, .func = create_log_json},
+  {.method = GET, .url = "/jsonds18b20", .do_it = HVS_SEND_JSON_DS18B20, .func = create_ds18b20_json},
+  
+  {.method = POST, .url = "/jsonds18b20", .do_it = HVS_JSON_DS18B20_POST, .func = json_DS18B20_Post},
+  {.method = POST, .url = "/shaker", .do_it = HVS_JSON_SHAKER_POST, .func = json_Shaker_Post},
+  {.method = POST, .url = "/jsonconfig", .do_it = HVS_JSON_CONFIG_POST, .func = json_Config_Post},
+  {.method = POST, .url = "/status", .do_it = HVS_JSON_STATUS_POST, .func = json_status_Post},
+  {.method = POST, .url = "/system", .do_it = HVS_JSON_SYSTEM_POST, .func = json_system_Post},
+};
+static GET_POST_URL_FUNCT_t get_post_error_func = {
+  .method = GET, .url = "/", .do_it = HVS_URI_ERROR, .func = NULL
+};
+static GET_POST_URL_FUNCT_t get_post_page_func = {
+  .method = GET, .url = "/", .do_it = HVS_SEND_PAGE, .func = NULL
+};
+
+static int func_count = sizeof (get_post_func) / sizeof (get_post_func[0]);
+
+static GET_POST_URL_FUNCT_t* get_browser_action(HTTPMethod method, const UriUriA uri, char **result)
+{
+  int rest_command = HVS_URI_ERROR;
+  GET_POST_URL_FUNCT_t* ps = NULL;
+
+  /*
+    char* scheme = strndup(uri.scheme.first, uri.scheme.afterLast - uri.scheme.first);
+    char* user = strndup(uri.userInfo.first, uri.userInfo.afterLast - uri.userInfo.first);
+    char* host = strndup(uri.hostText.first, uri.hostText.afterLast - uri.hostText.first);
+    char* port = strndup(uri.portText.first, uri.portText.afterLast - uri.portText.first);
+   */
+
+  char* filename = NULL;
+
+  if (uri.pathHead != NULL)
+  {
+    filename = strndup(uri.pathHead->text.first - 1,
+                           uri.pathTail->text.afterLast - uri.pathHead->text.first + 1);
+  }
+
+  if (filename != NULL)
+  {
+    *result = strdup(filename);
+    if (strlen(filename) < 2)
+    {
+      *result = strdup(DEFAULT_PAGE);
+    }
+    else
+    {
+      for (int i = 0; i < func_count; i++)
+      {
+        if (get_post_func[i].method == method)
+        {
+          if (!strncmp(filename, get_post_func[i].url, strlen(get_post_func[i].url)))
+          {
+            ps = &(get_post_func[i]);
+            break;
+          }
+        }
+      }
+      if(ps == NULL)
+      {
+        ps = (method==GET)? &get_post_page_func : &get_post_error_func;
+      }
+    }
+    
+    free(filename);
+  }
+  else
+  {
+    *result = strdup(DEFAULT_PAGE);
+    ps = (method==GET)? &get_post_page_func : &get_post_error_func;
+  }
+  
+  return ps;
+}
+
 //--------------------------------------------------------------------------------------------------
 // Name:      browser_post
 // Function:  -
@@ -175,7 +292,6 @@ static int browser_post(const UriUriA uri)
 
   char* filename = strndup(uri.pathHead->text.first - 1,
                            uri.pathTail->text.afterLast - uri.pathHead->text.first + 1);
-
 
   if (filename != NULL)
   {
@@ -203,7 +319,6 @@ static int browser_post(const UriUriA uri)
   }
   return rest_command;
 }
-
 
 struct JsonParser* create_json_processor() { }
 
@@ -262,8 +377,8 @@ int handle_json(void *coninfo_cls, size_t size)
 // Return:    -
 //--------------------------------------------------------------------------------------------------
 
-int handle_http_request(const char *url, const char *method, char **page,
-                    void **con_cls)
+int handle_http_request(const char *url, HTTPMethod method, char **page,
+                        void **con_cls)
 {
   int ret;
   int req_command = 0;
@@ -278,8 +393,27 @@ int handle_http_request(const char *url, const char *method, char **page,
     /* Failure */
     printf("failed parse");
     uriFreeUriMembersA(&uri);
+    return -1;
   }
 
+  GET_POST_URL_FUNCT_t *pu_func = get_browser_action(method, uri, page);
+  
+  if(pu_func!=NULL)
+  {
+    struct connection_info_struct *con_info = *con_cls;
+    if(pu_func->func != NULL)
+    {
+      pu_func->func(page, con_info);
+      ret = HVS_SEND_MEMORY;
+    }
+    else
+    {
+      ret = pu_func->do_it;
+    }
+    
+  }
+  
+/*
   if ((strcmp(method, "GET")) == 0)
   {
     req_command = browser_get(uri, page);
@@ -295,9 +429,11 @@ int handle_http_request(const char *url, const char *method, char **page,
   {
     // error
   }
+*/
 
-  struct connection_info_struct *con_info = *con_cls;
+  
 
+/*
   switch (req_command)
   {
 
@@ -306,36 +442,37 @@ int handle_http_request(const char *url, const char *method, char **page,
       ret = req_command;
       break;
     case HVS_SEND_JSON_STATUS:
-      create_status_json(page);
+      create_status_json(page, con_info);
       ret = HVS_SEND_MEMORY;
       break;
     case HVS_SEND_JSON_REGELUNGACTIVE:
-      create_regelung_active_json(page);
-      ret = HVS_SEND_MEMORY;
-      break;
-      
-    case HVS_SEND_JSON_CONFIG:
-      create_config_json(page);
-      ret = HVS_SEND_MEMORY;
-      break;
-    case HVS_SEND_JSON_LOG:
-      create_log_json(page);
-      ret = HVS_SEND_MEMORY;
-      break;
-    case HVS_SEND_JSON_DS18B20:
-      create_ds18b20_json(page);
-      ret = HVS_SEND_MEMORY;
-      break;
-    case HVS_SEND_JSON_SEKAIR:
-      create_sekair_json(page);
-      ret = HVS_SEND_MEMORY;
-      break;
-    case HVS_SEND_JSON_SHAKER:
-      create_shaker_json(page);
+      create_regelung_active_json(page, con_info);
       ret = HVS_SEND_MEMORY;
       break;
 
+    case HVS_SEND_JSON_CONFIG:
+      create_config_json(page, con_info);
+      ret = HVS_SEND_MEMORY;
+      break;
+    case HVS_SEND_JSON_LOG:
+      create_log_json(page, con_info);
+      ret = HVS_SEND_MEMORY;
+      break;
+    case HVS_SEND_JSON_DS18B20:
+      create_ds18b20_json(page, con_info);
+      ret = HVS_SEND_MEMORY;
+      break;
+    case HVS_SEND_JSON_SEKAIR:
+      create_sekair_json(page, con_info);
+      ret = HVS_SEND_MEMORY;
+      break;
+    case HVS_SEND_JSON_SHAKER:
+      create_shaker_json(page, con_info);
+      ret = HVS_SEND_MEMORY;
+      break;
+*/
       /*** POST FUNCTION ****/
+/*
     case HVS_JSON_CONFIG_POST:
       json_Config_Post(page, con_info);
       ret = HVS_SEND_MEMORY;
@@ -360,6 +497,8 @@ int handle_http_request(const char *url, const char *method, char **page,
       // error, unknown command
       ret = 1;
   }
+*/
+
 
   uriFreeUriMembersA(&uri);
 
@@ -382,7 +521,7 @@ static int get_shaker_json_state(char **result, char *msg)
   json_object * jobj = json_object_new_object();
 
   ruettler_json_status(jobj);
-  json_object_object_add(jobj, "message", json_object_new_string(msg));
+  json_object_object_add(jobj, "msg", json_object_new_string(msg));
 
 
   /*Now printing the json object*/
@@ -408,15 +547,15 @@ int json_status_Post(char **result, struct connection_info_struct *con_info)
     {
       regelung_activ(EVENT_INP_REGELUNG_DEACTIVE);
       regelung_activ(EVENT_INP_REGELUNG_ACTIVE);
-      *result = strdup("{\"message\":\"Regelung zurück gesetzt\"}");
+      *result = strdup("{\"msg\":\"Regelung zurück gesetzt\"}");
     }
     else
-      *result = strdup("{\"message\":\"Regelung nicht aktiv\"}");
+      *result = strdup("{\"msg\":\"Regelung nicht aktiv\"}");
 
   }
   else
   {
-    *result = strdup("{\"message\":\"fehler\"}");
+    *result = strdup("{\"msg\":\"Fehler aufgetreten, unbekannter Befehl.\"}");
   }
 }
 
@@ -432,19 +571,19 @@ int json_system_Post(char **result, struct connection_info_struct *con_info)
 {
   if (strcmp(con_info->action, "reboot") == 0)
   {
-    
-    *result = strdup("{\"message\":\"System wird neu gestartet\"}");
+
+    *result = strdup("{\"msg\":\"System wird neu gestartet\"}");
     system_reboot();
   }
   else if (strcmp(con_info->action, "shutdown") == 0)
   {
-    
-    *result = strdup("{\"message\":\"System wird herunter gefahren\"}");
+
+    *result = strdup("{\""MESSAGE_RETURN_STR"\":\"System wird herunter gefahren\"}");
     system_shutdown();
   }
   else
   {
-    *result = strdup("{\"message\":\"fehler\"}");
+    *result = strdup("{\"msg\":\"Fehler aufgetreten, unbekannter Befehl.\"}");
   }
 }
 
@@ -473,11 +612,11 @@ int json_Shaker_Post(char **result, struct connection_info_struct *con_info)
   else if (strcmp(con_info->action, "shaker_reset") == 0)
   {
     reset_shaker();
-    *result = strdup("{\"message\":\"zurückgesetzt\"}");
+    *result = strdup("{\"msg\":\"Rüttler zurückgesetzt\"}");
   }
   else
   {
-    *result = strdup("{\"message\":\"fehler\"}");
+    *result = strdup("{\"msg\":\"Fehler aufgetreten, unbekannter Befehl.\"}");
   }
 
 }
@@ -544,13 +683,17 @@ int json_Config_Post(char **result, struct connection_info_struct *con_info)
     if (parser->tok->err == json_tokener_success)
     {
       post_json_parse(parser->root);
-      *result = strdup("{\"msg\":\"gespeichert\"}");
+      *result = strdup("{\"msg\":\"Konfiguration wurde gespeichert\"}");
     }
     else
     {
-      *result = strdup("{\"msg\":\"fehler\"}");
+      *result = strdup("{\"msg\":\"Fehler beim speichern der Konfiguration\"}");
     }
 
+  }
+  else
+  {
+    *result = strdup("{\"msg\":\"Fehler aufgetreten, unbekannter Befehl.\"}");
   }
 
   //*result = strdup("{\"alert\":\"gespeichert\"}");
@@ -566,15 +709,27 @@ int json_Config_Post(char **result, struct connection_info_struct *con_info)
 
 int json_DS18B20_Post(char **result, struct connection_info_struct *con_info)
 {
-  JsonParser *parser = con_info->parser;
-  if (parser->tok->err == json_tokener_success)
+  if (strcmp(con_info->action, "refresh") == 0)
   {
-    post_json_parse(parser->root);
-    *result = strdup("{\"message\":\"gespeichert\"}");
+    ds18b20_refreshData();
+    create_ds18b20_json(result, con_info);
+  }
+  else if (strcmp(con_info->action, "save") == 0)
+  {
+    JsonParser *parser = con_info->parser;
+    if (parser->tok->err == json_tokener_success)
+    {
+      post_json_parse(parser->root);
+      *result = strdup("{\""MESSAGE_RETURN_STR"\":\"Zuordnung wurde gespeichert\"}");
+    }
+    else
+    {
+      *result = strdup("{\"msg\":\"Fehler beim speichern\"}");
+    }
   }
   else
   {
-    *result = strdup("{\"message\":\"fehler\"}");
+    *result = strdup("{\"msg\":\"Fehler aufgetreten, unbekannter Befehl.\"}");
   }
 }
 
@@ -595,11 +750,13 @@ void config_data_evaluate()
 
   char * sMaxPufferTemp = get_hashtab("max_puffer_temp");
   char * sMinPufferTemp = get_hashtab("min_puffer_temp");
-  
+
   char * sShakeTime = get_hashtab("shake_time");
   char * sShaking = get_hashtab("shaking");
   char * sShakeAllTime = get_hashtab("shake_alltimes");
-  
+  char * sShakeAllTimeStart = get_hashtab("shake_alltimes_start");
+  char * sShakeAllTimeEnd = get_hashtab("shake_alltimes_end");
+
   char * sShakeMaxCount = get_hashtab("shake_max_count");
   char * sShakePause = get_hashtab("shake_pause");
 
@@ -630,10 +787,15 @@ void config_data_evaluate()
   if (sShakePause != NULL) app_config_set_ruettler_off_time(atoi(sShakePause));
   if (sShakeMaxCount != NULL) app_config_set_ruettler_loop(atoi(sShakeMaxCount));
   if (sAbgas_end_temp != NULL) app_config_set_abgas_end_temp(atoi(sAbgas_end_temp));
-  
-  if (sShakeAllTime != NULL) app_config_set_shake_alltimes(1);
+
+  if (sShakeAllTime != NULL)
+  {
+    app_config_set_shake_alltimes(1);
+    if (sShakeAllTimeStart != NULL) app_config_set_abgas_end_temp(atoi(sShakeAllTimeStart));
+    if (sShakeAllTimeEnd != NULL) app_config_set_abgas_end_temp(atoi(sShakeAllTimeEnd));
+  }
   else app_config_set_shake_alltimes(0);
-  
+
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -840,7 +1002,7 @@ void post_json_parse(json_object* jobj)
   cleanup_hashtab();
 }
 
-static int create_log_json(char **result) { }
+static int create_log_json(char **result, struct connection_info_struct *con_info) { }
 
 //--------------------------------------------------------------------------------------------------
 // Name:      create_ds18b20_json
@@ -850,7 +1012,7 @@ static int create_log_json(char **result) { }
 // Return:    -
 //--------------------------------------------------------------------------------------------------
 
-static int create_ds18b20_json(char **result)
+static int create_ds18b20_json(char **result, struct connection_info_struct *con_info)
 {
   DS18B20_struct *ds18b20_dev;
   int count = ds18b20_getDeviceCount();
@@ -902,7 +1064,7 @@ static int create_ds18b20_json(char **result)
 // Return:    -
 //--------------------------------------------------------------------------------------------------
 
-static int create_sekair_json(char **result)
+static int create_sekair_json(char **result, struct connection_info_struct *con_info)
 {
   /*Creating a json object*/
   json_object * jobj = json_object_new_object();
@@ -924,13 +1086,13 @@ static int create_sekair_json(char **result)
 // Return:    -
 //--------------------------------------------------------------------------------------------------
 
-static int create_regelung_active_json(char **result)
+static int create_regelung_active_json(char **result, struct connection_info_struct *con_info)
 {
   /*Creating a json object*/
   json_object * jobj = json_object_new_object();
 
   control_json_status(jobj);
- 
+
   *result = strdup(json_object_to_json_string(jobj));
   json_object_put(jobj);
   return 1;
@@ -944,7 +1106,7 @@ static int create_regelung_active_json(char **result)
 // Return:    -
 //--------------------------------------------------------------------------------------------------
 
-static int create_shaker_json(char **result)
+static int create_shaker_json(char **result, struct connection_info_struct *con_info)
 {
   /*Creating a json object*/
   json_object * jobj = json_object_new_object();
@@ -965,7 +1127,7 @@ static int create_shaker_json(char **result)
 // Return:    -
 //--------------------------------------------------------------------------------------------------
 
-static int create_config_json(char **result)
+static int create_config_json(char **result, struct connection_info_struct *con_info)
 {
   json_object * ResultObj_Values = json_object_new_object();
   json_object *jarray_values = json_object_new_array();
@@ -997,7 +1159,8 @@ static int create_config_json(char **result)
   json_object_object_add(jobj, "shake_pause", json_object_new_int(app_config_get_ruettler_off_time()));
   json_object_object_add(jobj, "shake_max_count", json_object_new_int(app_config_get_ruettler_loop()));
   json_object_object_add(jobj, "shake_alltimes", json_object_new_int(app_config_get_shake_alltimes()));
-
+  json_object_object_add(jobj, "shake_alltimes_start", json_object_new_int(app_config_get_shake_alltimes_start()));
+  json_object_object_add(jobj, "shake_alltimes_end", json_object_new_int(app_config_get_shake_alltimes_end()));
   /*Now printing the json object*/
   //printf("The json object created: %sn", json_object_to_json_string(jobj));
   *result = strdup(json_object_to_json_string(jobj));
@@ -1216,6 +1379,8 @@ static int leistung_json_status(json_object * jobj)
     json_object_object_add(Obj_Values, "verlust", json_object_new_double(verlust));
     json_object_object_add(jobj, "leistung", Obj_Values);
   }
+  
+  
 
 }
 
@@ -1295,6 +1460,10 @@ static int ruettler_json_status(json_object * jobj)
 static int puffer_json_status(json_object * jobj)
 {
   char buffer[20];
+  static bool first_run = TRUE;
+  static double Qlast = 0.0;
+  static time_t Qlast_time;
+  time_t Qtime = time(NULL);
 
   json_object * ResultObj_Values1 = json_object_new_object();
 
@@ -1342,10 +1511,32 @@ static int puffer_json_status(json_object * jobj)
 
     //jtemp_use = json_object_new_boolean(1);
     double kg = ((double)app_config_get_max_volume() * app_config_getd_spez_wasser() * (app_config_get_max_puffer_temp() - durch_temp)) / (3600.0 * app_config_get_heizwert_holz());
-    double Q = ((double)app_config_get_max_volume() * app_config_getd_spez_wasser() * (ds18b20_get_durch_temp() - app_config_get_min_puffer_temp())) / (3600.0);
+    // Wärmeenergie
+    double Q = (double)app_config_get_max_volume() * app_config_getd_spez_wasser() * (ds18b20_get_durch_temp() - app_config_get_min_puffer_temp());
+    double W = Q / 3600.0;
 
-    sprintf(buffer, "%.2f", Q);
-    json_object_object_add(ResultObj_Values1, "leistung", json_object_new_string(buffer));
+    if(first_run)
+    {
+      first_run = FALSE;
+      Qlast = Q;
+      Qlast_time = Qtime-1;
+    }
+    double Qdiff_time = difftime(Qtime, Qlast_time);
+    // Wärmeleistung
+    double P = (Q - Qlast) / Qdiff_time;
+    Pavg.count++;
+    Pavg.sum+=P;
+    
+    Qlast_time = Qtime;
+    Qlast = Q;
+      
+    sprintf(buffer, "%.2f", P);
+    json_object_object_add(ResultObj_Values1, "waermeleistung", json_object_new_string(buffer));
+    sprintf(buffer, "%.2f", (Pavg.sum/Pavg.count));
+    json_object_object_add(ResultObj_Values1, "waermeleistung_avg", json_object_new_string(buffer));
+    
+    sprintf(buffer, "%.2f", W);
+    json_object_object_add(ResultObj_Values1, "energie", json_object_new_string(buffer));
     sprintf(buffer, "%.2f", kg);
     json_object_object_add(ResultObj_Values1, "nachlegen", json_object_new_string(buffer));
     sprintf(buffer, "%.2f", durch_temp);
@@ -1368,7 +1559,7 @@ static int puffer_json_status(json_object * jobj)
 // Return:    -
 //--------------------------------------------------------------------------------------------------
 
-static int create_status_json(char **result)
+static int create_status_json(char **result, struct connection_info_struct *con_info)
 {
 
   json_object * jobj = json_object_new_object();
@@ -1389,7 +1580,7 @@ static int create_status_json(char **result)
   // Sollwerte
   sollwert_json_status(jobj);
 
-  leistung_json_status(jobj);
+  //leistung_json_status(jobj);
 
   /*Now printing the json object*/
   //printf("The json object created: %s\n", json_object_to_json_string(jobj));

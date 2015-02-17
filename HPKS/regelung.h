@@ -28,6 +28,7 @@ extern "C" {
 #endif
 
   void init_regelung();
+  int regelung_activ(uint8_t event);
   void work_regelung();
   bool get_regelung_active();
   bool get_ruettler_state();

@@ -25,12 +25,7 @@
 #include <defines/used_includes.h>
 #include "mcp3008.h"
 
-
-
-uint8_t tx[3];
-uint8_t rx[3];
-
-
+/*
 static  SPI_CONFIG_struct mcp3008_spi_config = {
   SPI_MODE_3|SPI_NO_CS,
   8,
@@ -39,6 +34,7 @@ static  SPI_CONFIG_struct mcp3008_spi_config = {
   tx,
   rx,
   3};
+*/
 
 #define MCP3008_SPI_START_BYTE    0x01
 
@@ -50,15 +46,32 @@ int mcp3008_adc_read(uint8_t single_diff, uint8_t channel, uint16_t *adcout) {
   
   if(channel > ADC_7 )
     return -1;
-   
-  // Active the CS pin
-  MCP3008_CS_CLR;
-          
-  // 0100 aaa r/w
-  tx[0] = MCP3008_SPI_START_BYTE;
-  tx[1] = (single_diff|channel)<<4;
+ 
+bcm2835_spi_begin();
+  bcm2835_spi_setBitOrder(BCM2835_SPI_BIT_ORDER_MSBFIRST); // The default
+  bcm2835_spi_setDataMode(BCM2835_SPI_MODE3); // The default
+  bcm2835_spi_setClockDivider(BCM2835_SPI_CLOCK_DIVIDER_1024); // ~ 4 MHz
+  bcm2835_spi_chipSelect(BCM2835_SPI_CS_NONE); // 
+
+// Active the CS pin
   
-	spi_transfer(&mcp3008_spi_config, tx[0]);
+  MCP3008_CS_CLR;
+ // SleepMs(1);
+  
+  
+  uint8_t tx[10] = { MCP3008_SPI_START_BYTE, (single_diff|channel)<<4 };
+	uint8_t rx[10] = { 0 };
+  bcm2835_spi_transfernb(tx, rx, 3);
+  
+
+  bcm2835_spi_end();
+
+  
+          
+  // 0100 aaa r/w 
+  
+  
+	
   
   MCP3008_CS_SET;
   

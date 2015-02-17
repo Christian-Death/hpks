@@ -47,6 +47,7 @@ void temp_abgas_getData()
   uint16_t i;
 
   if (max31855_read(K_SONDE_ABGAS, &s_temp, &i_temp)) {
+    dbg_printf("K_SONDE_ABGAS: %u / %u\n", s_temp, i_temp);
     if (s_temp > 100)lambda_startmeasurment();
     else lambda_stopmeasurment();
 

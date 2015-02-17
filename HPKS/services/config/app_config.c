@@ -39,6 +39,8 @@ typedef struct {
   int off_time;
   int loop;
   int shake_always;
+  int shake_always_start;
+  int shake_always_end;
 } RUETTLER_CONFIG_INI_struct;
 
 typedef
@@ -266,9 +268,13 @@ int app_config_read_shaker()
   config_data.shaker.off_time = n;
   n = ini_getl(ini_session_shaker, "anzahl", DEF_SHAKING_COUNT, config_inifile);
   config_data.shaker.loop = n;
-  n = ini_getl(ini_session_shaker, "durchgehend", 0, config_inifile);
+  n = ini_getl(ini_session_shaker, "durchgehend", DEF_SHAKE_ALWAYS, config_inifile);
   config_data.shaker.shake_always = n;
-
+  n = ini_getl(ini_session_shaker, "always_start", DEF_SHAKE_ALWAYS_START, config_inifile);
+  config_data.shaker.shake_always_start = n;
+  n = ini_getl(ini_session_shaker, "always_end", DEF_SHAKE_ALWAYS_END, config_inifile);
+  config_data.shaker.shake_always_end = n;
+  
 }
 
 int app_config_write_shaker()
@@ -286,7 +292,10 @@ int app_config_write_shaker()
   n = ini_putl(ini_session_shaker, "anzahl", config_data.shaker.loop, config_inifile);
 
   n = ini_putl(ini_session_shaker, "durchgehend", config_data.shaker.shake_always, config_inifile);
-
+  
+  n = ini_putl(ini_session_shaker, "always_start", config_data.shaker.shake_always_start, config_inifile);
+ 
+  n = ini_putl(ini_session_shaker, "always_end", config_data.shaker.shake_always_end, config_inifile);
 }
 
 /*!***************************************************************************
@@ -596,9 +605,30 @@ int app_config_get_shake_alltimes()
 
 int app_config_set_shake_alltimes(int value)
 {
-  
   config_data.shaker.shake_always = value;
 }
+
+int app_config_get_shake_alltimes_start()
+{
+  return config_data.shaker.shake_always_start;
+}
+
+int app_config_set_shake_alltimes_start(int value)
+{
+  config_data.shaker.shake_always_start = value;
+}
+
+int app_config_get_shake_alltimes_end()
+{
+  return config_data.shaker.shake_always_end;
+}
+
+int app_config_set_shake_alltimes_end(int value)
+{
+  config_data.shaker.shake_always_end = value;
+}
+
+
 
 int puffer_volume;
 

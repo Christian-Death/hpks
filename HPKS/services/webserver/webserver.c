@@ -28,6 +28,7 @@
 #include <sys/types.h>
 #include <sys/select.h>
 #include <sys/socket.h>
+#include <arpa/inet.h>
 #include <sys/stat.h>
 #include <netinet/in.h>
 #include <microhttpd.h>
@@ -67,12 +68,6 @@
 #define MAXANSWERSIZE 1024
 
 /*#### TYPEDEFS ###################*/
-typedef enum {
-  UNKNOWN,
-  POST,
-  GET,
-  HEAD
-} HTTPMethod;
 
 
 /*#### VARIABLE ###################*/
@@ -378,13 +373,9 @@ static void request_completed(void *cls, struct MHD_Connection *connection,
         free(con_info->data);
       nr_of_clients--;
     }
-    JsonParser *parser = con_info->parser;
-    if (NULL != parser)
-    {
-      json_tokener_free(parser->tok);
-      json_object_put(parser->root);
-      free(parser);
-    }
+    
+    free_json(con_info->parser);
+    
   }
 
   free(con_info);
@@ -585,7 +576,7 @@ int is_authenticated(struct MHD_Connection *connection,
   char * page = con_info->page;
   int rest;
   int ret;
-  rest = (*http_handler)(url, method, &page, con_cls);
+  rest = (*http_handler)(url, methodType, &page, con_cls);
   switch (rest)
   {
     case HVS_SEND_PAGE:

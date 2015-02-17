@@ -37,6 +37,7 @@ typedef struct {
 }DS18B20_struct;
 
 int ds18b20_getDeviceList();
+void ds18b20_refreshData();
 void ds18b20_readData();
 void ds18b20_getData();
 double ds18b20_getAverage();

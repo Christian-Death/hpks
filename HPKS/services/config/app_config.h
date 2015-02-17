@@ -93,7 +93,10 @@ int app_config_set_ruettler_loop(int value);
 
 int app_config_get_shake_alltimes();
 int app_config_set_shake_alltimes(int value);
-
+int app_config_get_shake_alltimes_start();
+int app_config_set_shake_alltimes_start(int value);
+int app_config_get_shake_alltimes_end();
+int app_config_set_shake_alltimes_end(int value);
 
 
 #ifdef	__cplusplus

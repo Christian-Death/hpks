@@ -27,7 +27,19 @@
 #ifdef	__cplusplus
 extern "C" {
 #endif
+    
+    
+/*#### TYPEDEFS ###################*/
+typedef enum {
+  UNKNOWN,
+  POST,
+  GET,
+  HEAD
+} HTTPMethod;
 
+#include "../../json_worker.h"
+    
+    
 struct connection_info_struct {
   int connectiontype;
   struct MHD_PostProcessor *postprocessor;
@@ -39,8 +51,10 @@ struct connection_info_struct {
   JsonParser *parser;
 };
 
+
+
 typedef int (*http_request_handler)
-     (const char *url, const char *method, char **page, void **);
+     (const char *url, HTTPMethod method, char **page, void **);
 
 typedef int (*http_json_handler)
      (void **, size_t size);
