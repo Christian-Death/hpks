@@ -25,18 +25,18 @@
     <head>
         <title></title>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-       <!--
-        <link rel="stylesheet" type="text/css" href="css/jquery-ui-themes-1.10.3/themes/smoothness/jquery-ui.css" />
-        <style type="text/css" title="currentStyle">
-            @import "css/jquery-datatables/demo_page.css";
-            @import "css/jquery-datatables/demo_table.css";
-        </style>
-        <script type="text/javascript"  src="js/libs/jquery/jquery-1.9.1.js"></script>
-        <script  type="text/javascript" src="js/libs/jquery-ui/jquery-ui.js"></script>
-        <script type="text/javascript" src="js/libs/jquery-datatables/jquery.dataTables.js"></script>
+        <!--
+         <link rel="stylesheet" type="text/css" href="css/jquery-ui-themes-1.10.3/themes/smoothness/jquery-ui.css" />
+         <style type="text/css" title="currentStyle">
+             @import "css/jquery-datatables/demo_page.css";
+             @import "css/jquery-datatables/demo_table.css";
+         </style>
+         <script type="text/javascript"  src="js/libs/jquery/jquery-1.9.1.js"></script>
+         <script  type="text/javascript" src="js/libs/jquery-ui/jquery-ui.js"></script>
+         <script type="text/javascript" src="js/libs/jquery-datatables/jquery.dataTables.js"></script>
         -->
         <script type="text/javascript">
-            $(function() {
+            $(function () {
                 var ind = 0;
                 var select, input;
                 $('#ds18b20_sensoren').dataTable({
@@ -49,16 +49,16 @@
                     "aoColumnDefs": [{
                             "aTargets": [2],
                             "mData": 0,
-                            "mRender": function(data, type, full) {
+                            "mRender": function (data, type, full) {
                                 return select.outerHTML;
-                            },
+                            }
                         },
                         {
                             "aTargets": [3],
                             "mData": 0,
-                            "mRender": function(data, type, full) {
+                            "mRender": function (data, type, full) {
                                 return input.outerHTML;
-                            },
+                            }
                         }
                     ]
                 });
@@ -82,12 +82,13 @@
                     pufferoptions += '<option value=out>Aussen</option>';
                     for (var i = 0; i < json.puffer_count; i++)
                     {
-                        pufferoptions += '<option value=' + i + '>Puffer ' + i + '</option>';
+                        pufferoptions += '<option value=' + i + '>Puffer ' + (i+1) + '</option>';
                     }
                     select.innerHTML = pufferoptions;
 
-
-                    $.each(json.aaData, function() {
+                    var temp = json.aaData;
+                    temp.sort(dynamicSortMultiple("puffer","pos"));
+                    $.each(temp, function () {
                         //     $(rowBuilder(this)).data("data", this).appendTo("#jobtable");
                         select.setAttribute('name', ind + '');
                         select.setAttribute('id', 'pufferchange' + ind);
@@ -119,7 +120,7 @@
                     $.ajax({
                         type: "GET",
                         url: "jsonds18b20",
-                        success: function(json) {
+                        success: function (json) {
                             set_data(json);
 
 
@@ -137,7 +138,9 @@
                             },
                             text: true
                         })
-                        .click(function(event) {
+                        .click(function (event) {
+                             $("#spinner").show();
+
                             event.preventDefault();
 
                             ajax_ds18B20_call();
@@ -150,7 +153,7 @@
                             },
                             text: true
                         })
-                        .click(function(event) {
+                        .click(function (event) {
                             event.preventDefault();
 
                             ajax_ds18B20_save();
@@ -158,8 +161,8 @@
 
 
 
-                var ajax_ds18B20_save = function() {
-                    var columns = $('#ds18b20_sensoren thead th').map(function() {
+                var ajax_ds18B20_save = function () {
+                    var columns = $('#ds18b20_sensoren thead th').map(function () {
                         // This assumes that your headings are suitable to be used as
                         //  JavaScript object keys. If the headings contain characters 
                         //  that would be invalid, such as spaces or dashes, you should
@@ -167,11 +170,11 @@
                         return $(this).text();
                     });
 
-                    var tableObject = $('#ds18b20_sensoren tbody tr').map(function(i) {
+                    var tableObject = $('#ds18b20_sensoren tbody tr').map(function (i) {
                         var row = {};
 
                         // Find all of the table cells on this row.
-                        $(this).find('td').each(function(i) {
+                        $(this).find('td').each(function (i) {
                             // Determine the cell's column name by comparing its index
                             //  within the row with the columns list we built previously.
                             var rowName = columns[i];
@@ -186,21 +189,13 @@
                                     || $(this).text();
                             row[rowName] = value;
 
-                            // if (rowName == 'Puffer') {
-                            //   //row[rowName] = $(this).find('option:selected').text();
-                            //   row[rowName] = $(this).find('option:selected').val();
-                            // } else if (rowName == 'Position') {
-                            //   //row[rowName] = $(this).find('option:selected').text();
-                            //   row[rowName] = $(this).val();
-                            // } else
-                            //   row[rowName] = $(this).text();
                         });
 
                         // Finally, return the row's object representation, to be included
                         //  in the array that $.map() ultimately returns.
                         return row;
 
-    // Don't forget .get() to convert the jQuery set to a regular array.
+                        // Don't forget .get() to convert the jQuery set to a regular array.
                     }).get();
 
 
@@ -217,25 +212,40 @@
                         type: "POST",
                         url: "jsonds18b20",
                         data: mydata,
-                        success: function(data) {
-                            ShowInfoDlg(data.message);
+                        success: function (data) {
+                            $("#spinner").hide();
+                            InfoDlg(data);
+                            
                         },
-                        error: function(e) {
+                        error: function (e) {
+                            $("#spinner").hide();
                             alert('oops: ' + e);
                         }
                     });
 
                 };
 
-                var ajax_ds18B20_call = function() {
+                $("#tabs").on( "tabsactivate", function( event, ui ){
+                    //alert("a"+ui.newTab.index());
+                });
+                
+                var ajax_ds18B20_call = function () {
                     //your jQuery ajax code
+                    var mydata = {};
+                    mydata['action'] = 'refresh';
                     $.ajax({
-                        type: "GET",
+                        type: "POST",
                         url: "jsonds18b20",
-                        data: "action=refresh",
-                        success: function(json) {
+                        data: mydata,
+                        success: function (json) {
+                            $("#spinner").hide();
                             //$('#results').text(data.result);
                             set_data(json);
+                            InfoDlg(data);
+                        },
+                        error: function (e) {
+                            $("#spinner").hide();
+                            alert('oops: ' + e);
                         }
                     });
 
@@ -277,6 +287,10 @@
              <button>Add Line</button>
              <div id="results"></div>
             -->
+        </div>
+
+        <div id="spinner" class="spinner" style="display:none;">
+            <img id="img-spinner" src="img/ajax-loader2.gif" alt="Loading"/>
         </div>
     </body>
 </html>

@@ -25,18 +25,18 @@
   <head>
     <title></title>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-<!--
-    <link rel="stylesheet" type="text/css" href="css/jquery-ui-themes-1.10.3/themes/smoothness/jquery-ui.css" />
-    <style type="text/css" title="currentStyle">
-      @import "css/jquery-datatables/demo_page.css";
-      @import "css/jquery-datatables/demo_table.css";
-    </style>
-    <script type="text/javascript"  src="js/libs/jquery/jquery-1.9.1.js"></script>
-    <script  type="text/javascript" src="js/libs/jquery-ui/jquery-ui.js"></script>
-    <script  type="text/javascript" src="js/libs/jquery-plugins/serializeForm/serializeForm.min.js"></script>
--->  
+    <!--
+        <link rel="stylesheet" type="text/css" href="css/jquery-ui-themes-1.10.3/themes/smoothness/jquery-ui.css" />
+        <style type="text/css" title="currentStyle">
+          @import "css/jquery-datatables/demo_page.css";
+          @import "css/jquery-datatables/demo_table.css";
+        </style>
+        <script type="text/javascript"  src="js/libs/jquery/jquery-1.9.1.js"></script>
+        <script  type="text/javascript" src="js/libs/jquery-ui/jquery-ui.js"></script>
+        <script  type="text/javascript" src="js/libs/jquery-plugins/serializeForm/serializeForm.min.js"></script>
+    -->  
     <script type="text/javascript">
-      $(function() {
+      $(function () {
         var volCounter = 1,
                 volTemplate = "<p  id='#{id}'><label for='#{id}'>#{label}</label><input id='spinner_#{id}' name='volume[]' value='2000' /></p>";
         $("#spinner_max_puffer_temp").spinner({
@@ -96,18 +96,31 @@
           max: 50,
           step: 1
         });
-        
-        $('#chebo_shake_alltimes').change(function() {
-            if ($(this).is(':checked')) {
-                $("#shaker_config").css("display", "none");
-                $(this).prop("value","1");
-            }else{
-                $("#shaker_config").css("display", "");
-                $(this).prop("value","0");
-            }
+        $("#spinner_shake_always_start").spinner({
+          min: 50,
+          max: 500,
+          step: 1
+        });
+        $("#spinner_shake_always_end").spinner({
+          min: 20,
+          max: 500,
+          step: 1
         });
 
-        $("#btnSave").button().click(function(event) {
+
+        $('#chebo_shake_alltimes').change(function () {
+          if ($(this).is(':checked')) {
+            $("#shaker_config").css("display", "none");
+            $("#shaker_always_config").css("display", "");
+            $(this).prop("value", "1");
+          } else {
+            $("#shaker_always_config").css("display", "none");
+            $("#shaker_config").css("display", "");
+            $(this).prop("value", "0");
+          }
+        });
+
+        $("#btnSave").button().click(function (event) {
           event.preventDefault();
           var mydata = {};
           mydata['action'] = 'save';
@@ -119,16 +132,18 @@
             type: "POST",
             url: "jsonconfig",
             data: mydata,
-            success: function(data) {
-             
-              $.each(data, function(i, item) {
-                $('#'+i).html(item);
-                if(i==='msg'){
-                  setTimeout(function(){$('#msg').html('');}, 5000);
+            success: function (data) {
+
+              $.each(data, function (i, item) {
+                $('#' + i).html(item);
+                if (i === 'msg') {
+                  setTimeout(function () {
+                    $('#msg').html('');
+                  }, 5000);
                 }
               });
             },
-            error: function(e) {
+            error: function (e) {
               alert('oops: ' + e);
             }
 
@@ -136,7 +151,7 @@
 
         });
 
-        $("#btnDefault").button().click(function(event) {
+        $("#btnDefault").button().click(function (event) {
           event.preventDefault();
           var mydata = {};
           mydata['action'] = 'default';
@@ -144,17 +159,17 @@
             type: "POST",
             url: "jsonconfig",
             data: mydata,
-            success: function(data) {
+            success: function (data) {
               set_spinner(data);
             },
-            error: function(e) {
+            error: function (e) {
               alert('oops: ' + e);
             }
 
           });
         });
 
-        $("#btnReset").button().click(function(event) {
+        $("#btnReset").button().click(function (event) {
           event.preventDefault();
           //your jQuery ajax code
           load_config();
@@ -172,7 +187,7 @@
             }
             else {
               volCounter++;
-              var label = "Puffervolumen  " + volCounter,
+              var label = "Puffervolumen " + volCounter+"&nbsp;",
                       id = "volume_" + volCounter,
                       a = $(volTemplate.replace(/#\{id\}/g, id).replace(/#\{label\}/g, label));
               $(a).appendTo("#volumen");
@@ -186,11 +201,11 @@
         }
 
         function set_spinner(data) {
-          $.each(data, function(i, item) {
+          $.each(data, function (i, item) {
             var spinnerid = "#spinner_";
             if ($.isArray(item)) {
               spinnerid += i + "_";
-              $.each(item, function(index, value) {
+              $.each(item, function (index, value) {
                 var spinner = $(spinnerid + (index + 1)).spinner();
                 spinner.spinner("value", value);
               })
@@ -204,16 +219,16 @@
           });
         }
         function set_checkbox(data) {
-          $('#chebo_shake_alltimes').prop('checked', (data.shake_alltimes === 1)?true:false);
+          $('#chebo_shake_alltimes').prop('checked', (data.shake_alltimes === 1) ? true : false);
           $('#chebo_shake_alltimes').trigger("change");
         }
-        
+
         function load_config() {
           //your jQuery ajax code
           $.ajax({
             type: "GET",
             url: "jsonconfig",
-            success: function(data) {
+            success: function (data) {
               set_spinner(data);
               set_checkbox(data);
             }
@@ -225,7 +240,7 @@
     </script>
   </head>
   <body>
-    <div id="msg"></div>
+    <div id="msg1"></div>
     <form>
       <div id="puffer_konfig">
         <p><strong>Puffer - Konfiguration:</strong></p>
@@ -253,7 +268,7 @@
           <input id="spinner_min_puffer_temp" name="min_puffer_temp" />
         </p>
       </div>
-<div id="hks_konfig">
+      <div id="hks_konfig">
         <p><strong>HKS - Konfiguration: (Regelung)</strong></p>
         <p>
           <label for="spinner_abgas_end_temp">Abgastemp. für Ende Regelung (80 - 120 °C)</label>
@@ -271,22 +286,33 @@
           <input id="spinner_shake_pause" name="shake_pause" />
         </p> 
         <p>
-            <input id="chebo_shake_alltimes" type="checkbox" name="shake_alltimes" value="0" />Rüttler immer an
+          <input id="chebo_shake_alltimes" type="checkbox" name="shake_alltimes" value="0" />Rüttler immer an
         </p>
         <div id="shaker_config">
-            <p>
-              <label for="spinner_shake_start">Startkriterium (0,5 V)</label>
-              <input id="spinner_shake_start" name="shake_start" />
-            </p>
-            <p>
-              <label for="spinner_shaking">Rüttelkriterium (0,6 V - 1,5 V)</label>
-              <input id="spinner_shaking" name="shaking" value="1" />
-            </p>
-            <p>
-              <label for="spinner_shake_max_count">Rüttelhübe bis Ausbrand erkannt (5 - 50)</label>
-              <input id="spinner_shake_max_count" name="shake_max_count" />
-            </p>      
+          <p>
+            <label for="spinner_shake_start">Startkriterium (0,5 V)</label>
+            <input id="spinner_shake_start" name="shake_start" />
+          </p>
+          <p>
+            <label for="spinner_shaking">Rüttelkriterium (0,6 V - 1,5 V)</label>
+            <input id="spinner_shaking" name="shaking" value="1" />
+          </p>
+          <p>
+            <label for="spinner_shake_max_count">Rüttelhübe bis Ausbrand erkannt (5 - 50)</label>
+            <input id="spinner_shake_max_count" name="shake_max_count" />
+          </p>      
         </div>
+        <div id="shaker_always_config">
+          <p>
+            <label for="spinner_shake_always_start">Startkriterium (°C)</label>
+            <input id="spinner_shake_always_start" name="shake_alltimes_start" value="120" />
+          </p>
+          <p>
+            <label for="spinner_shake_always_end">Endkriterium (°C)</label>
+            <input id="spinner_shake_always_end" name="shake_alltimes_end" value="60" />
+          </p>     
+        </div>
+
       </div>
     </form>
     <button id="btnSave">Save</button>

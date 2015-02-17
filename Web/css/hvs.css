@@ -85,10 +85,19 @@ html, body, #status {
   /*  background-position-y: bottom;*/
   margin: 10px 0 10px 0;
 }
+
 #abgas_gauge,
 #sek_air_gauge{
   margin-left:auto;margin-right:auto;
 }
+
+#abgas_gauge rect,
+#sek_air_gauge rect,
+#brenner_gauge rect{
+  fill-opacity: 0.2;
+}
+
+
 #outtemp {
   position: relative;
   float: right;
@@ -147,7 +156,7 @@ html, body, #status {
 .outtemp{
   display: block;
   position: absolute;
-  width: 122px;
+  width: 100px;
 }
 
 #abgasverlust{
@@ -177,8 +186,8 @@ html, body, #status {
 
 #brenner_temp {
 top: 68%;
-right: 50%;
-background-color: rgba(255, 255, 255, 0.81);
+right: 52%;
+
 }
 #o2 {
   top: 24%;
@@ -295,3 +304,19 @@ width: 90%;
 }
 
 .dark_light{opacity:.1;}
+
+.spinner {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    margin-left: -50px; /* half width of the spinner gif */
+    margin-top: -50px; /* half height of the spinner gif */
+    text-align:center;
+    z-index:1234;
+    overflow: auto;
+    width: 100px; /* width of the spinner gif */
+    height: 102px; /*hight of the spinner gif +2px to fix IE8 issue */
+}
+
+#verlust p.energie_zu{background-color:rgb(163, 163, 239);}
+#verlust p.energie_ab{background-color: rgb(255, 63, 63);}

@@ -25,7 +25,8 @@
     <head>
         <title></title>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-<!--
+        <!--
+       
         <script type="text/javascript"  src="js/libs/jquery/jquery-1.9.1.js"></script>
         <script  type="text/javascript" src="js/libs/jquery-ui/jquery-ui.js"></script>
         <script type="text/javascript" src="js/libs/jquery-datatables/jquery.dataTables.js"></script>
@@ -35,13 +36,15 @@
 
         <script  type="text/javascript" src="js/libs/justGage/raphael.2.1.0.min.js"></script>
         <script  type="text/javascript" src="js/libs/justGage/justgage.1.0.1.min.js"></script>
+        <script  type="text/javascript" src="js/libs/gaugeSVG/gaugeSVG.js"></script>
+
         <link rel="stylesheet" type="text/css" href="css/hvs.css" media="screen">   
--->
+        -->
         <script type="text/javascript">
             // jQuery folgt hier
 
 
-            handlePufferSelection = function() {
+            handlePufferSelection = function () {
 
                 var a = $("#puffer").children("div");
                 $(a).hide();
@@ -49,15 +52,8 @@
 
             };
 
-            $(document).ready(function() {
-                $("#dialog").dialog({
-                    autoOpen: false,
-                    modal: true,
-                    show: {
-                        effect: "blind",
-                        duration: 500
-                    }
-                });
+            $(document).ready(function () {
+
 
                 $("#cobo_pick_puffer").change(handlePufferSelection);
 
@@ -116,7 +112,7 @@
                 });
 
                 $("#btnRuettler")
-                        .click(function(event) {
+                        .click(function (event) {
                             event.preventDefault();
                             //your jQuery ajax code
                             var mydata = {};
@@ -126,18 +122,18 @@
                                 type: "POST",
                                 url: "shaker",
                                 data: mydata,
-                                success: function(data) {
-                                    shaker(data.shaker);
-                                    ShowInfoDlg(data.message);
+                                success: function (data) {
+                                    //shaker(data.shaker);
+                                    InfoDlg(data);
                                 },
-                                error: function(e) {
+                                error: function (e) {
                                     alert('oops: ' + e);
                                 }
                             });
                         });
 
                 $("#btnRuettlerReset")
-                        .click(function(event) {
+                        .click(function (event) {
                             event.preventDefault();
 
                             //your jQuery ajax code
@@ -148,11 +144,11 @@
                                 type: "POST",
                                 url: "shaker",
                                 data: mydata,
-                                success: function(data) {
-                                    shaker(data.shaker);
-                                    ShowInfoDlg(data.message);
+                                success: function (data) {
+                                    //shaker(data.shaker);
+                                    InfoDlg(data);
                                 },
-                                error: function(e) {
+                                error: function (e) {
                                     alert('oops: ' + e);
                                 }
                             });
@@ -162,20 +158,27 @@
                         .button({
                             text: false
                         })
-                        .click(function(event) {
+                        .click(function (event) {
                             event.preventDefault();
-                            ajax_call();
+                            timing_events.filter(function (o) {
+                                if (o.name === "FullStatus") {
+                                    o.cur = 1;
+                                    return true;
+                                } else {
+                                    return false;
+                                }
+                            });
                         });
                 $("#btnRestart")
                         .button()
-                        .click(function() {
-                            $("#dialog p").text("Regelung rücksetzen?");
-                            $("#dialog").dialog(
+                        .click(function () {
+                            $("#msg_dialog p").text("Regelung rücksetzen?");
+                            $("#msg_dialog").dialog(
                                     'option',
                                     'buttons', [
                                         {
                                             text: "Ja",
-                                            click: function() {
+                                            click: function () {
                                                 var mydata = {};
                                                 mydata['action'] = 'control_reset';
 
@@ -183,10 +186,10 @@
                                                     type: "POST",
                                                     url: "status",
                                                     data: mydata,
-                                                    success: function(data) {
-                                                        ShowInfoDlg(data.message);
+                                                    success: function (data) {
+                                                        InfoDlg(message);
                                                     },
-                                                    error: function(e) {
+                                                    error: function (e) {
                                                         alert('oops: ' + e);
                                                     }
                                                 });
@@ -195,59 +198,84 @@
                                         },
                                         {
                                             text: "Nein",
-                                            click: function() {
+                                            click: function () {
                                                 $(this).dialog('close');
                                             }
                                         }]);
-                            $("#dialog").dialog("open");
+                            $("#msg_dialog").dialog("open");
                         });
 
-                var sek_air_gauge = new JustGage({
+                var sek_air_gauge = new GaugeSVG({
                     id: "sek_air_gauge",
-                    gaugeWidthScale: 0.5,
-                    titleFontColor: "black",
-                    value: 0,
-                    min: 0,
-                    max: 10000,
-                    title: "Sekundärluft-\nansteuerung",
-                    label: "mV"
+                    value: 0.0,
+                    title: "Sek.-luftansteuerung",
+                    label: "mV",
+                    canvasBackColor: "#000",
+                    titleColor: "#000",
+                    labelColor: "#000",
+                    valueColor: "#000",
+                    minmaxColor: "#000",
+                    gaugeWidthScale: 0.75,
+                    gaugeShadowScale: 0.5,
+                    min: 0.0,
+                    max: 10000.0,
+                    lowerActionLimit: 1.0,
+                    lowerWarningLimit: 2.0,
+                    upperWarningLimit: 10,
+                    upperActionLimit: -1,
+                    needleColor: "#000",
+                    optimumRangeColor: "#00ff00",
+                    warningRangeColor: "#f4f444",
+                    actionRangeColor: "#ff8888"
                 });
-                var abgas_gauge = new JustGage({
+
+                var abgas_gauge = new GaugeSVG({
                     id: "abgas_gauge",
-                    gaugeWidthScale: 0.5,
-                    titleFontColor: "black",
-                    value: 0,
-                    min: 0,
-                    max: 300,
+                    value: 0.0,
                     title: "Abgastemperatur",
-                    label: "°C"
+                    label: "°C",
+                    canvasBackColor: "#000000",
+                    titleColor: "#000",
+                    labelColor: "#000",
+                    valueColor: "#000",
+                    minmaxColor: "#000",
+                    gaugeWidthScale: 0.75,
+                    gaugeShadowScale: 0.5,
+                    min: 0.0,
+                    max: 500.0,
+                    lowerActionLimit: 0.001,
+                    lowerWarningLimit: 0.01,
+                    upperWarningLimit: 100.0,
+                    upperActionLimit: 300.0,
+                    needleColor: "#000",
+                    optimumRangeColor: "#00ff00",
+                    warningRangeColor: "#f4f444",
+                    actionRangeColor: "#ff8888"
                 });
-                var brenner_gauge = new JustGage({
+                
+                var brenner_gauge = new GaugeSVG({
                     id: "brenner_gauge",
-                    gaugeWidthScale: 0.5,
-                    titleFontColor: "black",
-                    value: 0,
-                    min: 0,
-                    max: 1300,
+                    value: 0.0,
                     title: "Brennertemperatur",
-                    label: "°C"
+                    label: "°C",
+                    canvasBackColor: "#000000",
+                    titleColor: "#000",
+                    valueColor: "#000",
+                    labelColor: "#000",
+                    minmaxColor: "#000",
+                    gaugeWidthScale: 0.75,
+                    gaugeShadowScale: 0.5,
+                    min: 0.0,
+                    max: 1300.0,
+                    lowerActionLimit: 0.01,
+                    lowerWarningLimit: 0.01,
+                    upperWarningLimit: 400.0,
+                    upperActionLimit: 900.0,
+                    needleColor: "#000",
+                    optimumRangeColor: "#00ff00",
+                    warningRangeColor: "#f4f444",
+                    actionRangeColor: "#ff8888"
                 });
-
-
-                function ShowInfoDlg(message) {
-                    $("#dialog p").text(message);
-                    $("#dialog").dialog(
-                            'option',
-                            'buttons', [
-                                {
-                                    text: "Ok",
-                                    click: function() {
-                                        $(this).dialog('close');
-                                    }
-                                }]);
-                    $("#dialog").dialog("open");
-                }
-
 
                 var x = 0;
 
@@ -266,7 +294,7 @@
                         $('#control_state > span').text('Deactive');
                     }
                     $('#control_info').dataTable( ).fnClearTable();
-                    $.each(data.times, function() {
+                    $.each(data.times, function () {
                         for (var key in this) {
 
                             $('#control_info').dataTable( ).fnAddData([
@@ -293,7 +321,7 @@
                         }
                     }
                     $('#ruettler_info').dataTable( ).fnClearTable();
-                    $.each(data.data, function(index, value) {
+                    $.each(data.data, function (index, value) {
 
                         $('#ruettler_info').dataTable( ).fnAddData([
                             index + 1,
@@ -322,6 +350,7 @@
 
 
                 }
+
 
 
                 function puffer(data) {
@@ -358,7 +387,9 @@
                     var dummy_counter = 0,
                             gesamt_temp = new Array(),
                             gesamt_temp_count = new Array();
-                    $.each(data.temps, function() {
+                    var temp = data.temps;
+                    temp.sort(dynamicSort("pos"));
+                    $.each(temp, function () {
                         if (this.puffer > -1 && this.puffer < 255) {
 
                             var idp = "puffer_" + (this.puffer + 1) + this.pos,
@@ -378,7 +409,7 @@
                         }
                     });
 
-                    $("#cobo_pick_puffer option").each(function() {
+                    $("#cobo_pick_puffer option").each(function () {
                         var puffernr = $(this).attr('value');
                         var durchschnitt_puffer = gesamt_temp[puffernr] / gesamt_temp_count[puffernr];
                         $(this).text('Puffer ' + ((+puffernr) + 1) + ' (' + durchschnitt_puffer.toFixed(2) + ')');
@@ -387,29 +418,47 @@
                 }
 
                 function max_values(data) {
-                    $.each(data, function(i, item) {
+                    $.each(data, function (i, item) {
                         var oldtext = $('#' + i + ' .value').text();
                         $('#' + i + ' .value').text(oldtext + ' (' + item + ')');
                     });
                 }
-                function leistung(data) {
-                    var a = data.verlust * 1000;
-                    $('#verlust .value').text(a.toFixed(3) + 'Wh');
-                    $('#verlust .zeit').text('über ' + data.zeit + 'min');
-                }
+                
+                //function leistung(data) {
+                //    var a = data.verlust * 1000;
+                //    $('#verlust .value').text(a.toFixed(3) + 'Wh');
+                //    $('#verlust .zeit').text('über ' + data.zeit + 'min');
+                //}
 
-                var json_auswerten = function(data) {
-                    $.each(data["values"], function(i, item) {
+                var json_auswerten = function (data) {
+                    $.each(data["values"], function (i, item) {
                         $('#' + i + ' .value').text(item);
                     });
-                    $.each(data["uses"], function(i, item) {
+                    $.each(data["uses"], function (i, item) {
                         if (item)
                             $('#' + i).show();
                         else
                             $('#' + i).hide();
                     });
+                    $('#verlust .value').text((+(data.puffer.waermeleistung)).toFixed(2) + 'kW');
+                    if((+(data.puffer.waermeleistung)) < 0.0)
+                    {
+                        $('#verlust p').removeClass('energie_zu');
+                        $('#verlust p').addClass('energie_ab');
+                    }
+                    else if((+(data.puffer.waermeleistung)) > 0.0)
+                    {
+                        $('#verlust p').removeClass('energie_ab');
+                        $('#verlust p').addClass('energie_zu');                       
+                    }
+                    else 
+                    {
+                        $('#verlust p').removeClass('energie_ab');
+                        $('#verlust p').removeClass('energie_zu');                       
+                    }
+                    
                     $('#nachlegen .value').text(data.puffer.nachlegen);
-                    $('#puffer_durchschnitt .value').text(data.puffer.puffer_durchschnitt + "°C / " + data.puffer.leistung + "KWh");
+                    $('#puffer_durchschnitt .value').text(data.puffer.puffer_durchschnitt + "°C / " + data.puffer.energie + "KWh");
 
                     $('#thermo').thermometer('setValue', data.puffer.outtemp);
 
@@ -421,59 +470,60 @@
                     shaker(data.shaker);
                     sollwert(data.nominal_value);
                     max_values(data.max);
-                    if (data.leistung !== undefined)
-                        leistung(data.leistung);
+                    //if (data.leistung !== undefined)
+                    //    leistung(data.leistung);
                 };
 
-                var getSekAirValue = function() {
+                var getSekAirValue = function () {
                     //your jQuery ajax code
                     $.ajax({
                         type: "GET",
                         url: "jsonsekair",
-                        success: function(data) {
+                        success: function (data) {
                             sek_air_gauge.refresh(data["lambdacheck"]);
+
                         }
                     });
                 };
 
 
-                var getShakerValue = function() {
+                var getShakerValue = function () {
                     //your jQuery ajax code
                     $.ajax({
                         type: "GET",
                         url: "jsonshaker",
-                        success: function(data) {
+                        success: function (data) {
                             shaker(data.shaker);
                         }
                     });
                 };
 
-                var getRegelungActive = function() {
+                var getRegelungActive = function () {
                     //your jQuery ajax code
                     $.ajax({
                         type: "GET",
                         url: "jsonrglactive",
-                        success: function(data) {
+                        success: function (data) {
                             control(data.control);
                         }
                     });
                 };
-                
-                var getFullStatus = function() {
 
-                    $.getJSON("test.json", function(data) {
-                        json_auswerten(data);
-                    });
+                var getFullStatus = function () {
+                    //$.getJSON("test.json", function (data) {
+                    //    json_auswerten(data);
+                    //});
 
                     //your jQuery ajax code
                     $.ajax({
                         type: "GET",
                         url: "jsonstatus",
-                        success: function(data) {
+                        success: function (data) {
                             json_auswerten(data);
                         }
                     });
                 };
+
 
                 var timing_events = [];
                 timing_events.push(
@@ -483,8 +533,8 @@
                 {name: "FullStatus", periode: 60, cur: 1, func: getFullStatus}
                 );
 
-                var time_machine = function() {
-                    $.each(timing_events, function(i, item) {
+                var time_machine = function () {
+                    $.each(timing_events, function (i, item) {
                         item.cur--;
                         if (item.cur === 0) {
                             item.func();
@@ -494,24 +544,21 @@
                     });
                     timedRefresh();
                 };
+                var tab_active = true;
                 function timedRefresh() {
-                    if(window.blurred) {
+                    if (!tab_active) {
                         setTimeout(timedRefresh, 100);
                         return;
                     }
                     setTimeout(time_machine, 1000);
-                   
-                }
-                
-                $('#tabs').bind('tabsselect', function(evt, ui) { 
-                    alert("TEST1");
-    console.log($('#tabs').find('li.ui-tabs-selected a').attr('href')); 
-});
 
-                window.onpagehide= function() {alert("TEST");};
-                window.nblur = function() {window.blurred = true;};
-                window.onfocus = function() {window.blurred = false;};
-                
+                }
+
+                $("#tabs").on("tabsactivate", function (event, ui) {
+                    //alert("b"+ui.newTab.index());
+                    tab_active = (ui.newTab.index() === 0);
+                });
+
                 timedRefresh();
 
 
@@ -522,9 +569,6 @@
         </script>
     </head>
     <body>
-        <div id="dialog" title="">
-            <p></p>
-        </div>
         <div id="ctrl_btn">
             <button value="Refresh" id="btnRefresh" ></button>
             <button value="Restart" id="btnRestart" >Regelung<br/>rücksetzen</button>
@@ -543,7 +587,7 @@
                         <div id="sek_air_gauge" style="width:100px; height:80px"></div>
                         <!-- <p>Sekundärluft-<br/>ansteuerung<br/><span class="value">?</span>mV</p>-->
                     </div>
-                    <div id="verlust"><p>Leistungsverlust<br/><span class="value">?</span><br/><span class="zeit">?</span></p></div> 
+                    <div id="verlust"><p>Heizlast<br/><span class="value">?</span><!-- <br/><span class="zeit">?</span>--></p></div> 
                     <div id="nachlegen"><p>Nachlegen<br><span class="value">0</span>kg</p></div>
                     <div id="brenner_temp">
                         <div id="brenner_gauge" style="width:100px; height:80px"></div>
